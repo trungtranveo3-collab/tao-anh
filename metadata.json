@@ -1,0 +1,5 @@
+{
+  "name": "AI Photo Booth",
+  "description": "An application that uses Google's Gemini API to transform user-uploaded photos into various artistic styles. Users can upload an image, select a style, customize options, and generate new AI-powered images.",
+  "requestFramePermissions": []
+}
