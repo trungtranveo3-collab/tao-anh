@@ -1,6 +1,6 @@
 import React from 'react';
 // FIX: Added 'Accessory' to the type imports to be used for BASE_ACCESSORY_DEFAULTS.
-import type { Style, StyleTab, ImageType, AccessorySuggestions, AccessoryDefaults, Accessory } from './types';
+import type { Style, StyleTab, ImageType, AccessorySuggestions, AccessoryDefaults, Accessory, AspectRatio, ProductCategory } from './types';
 
 // Icons for Styles
 const UserTieIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
@@ -27,6 +27,22 @@ const StarIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) =
 const NewspaperIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h16c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V5c0-1.1.9-2-2-2zm0 2v14h16V5H4zm2 2h8v2H6V7zm0 4h8v2H6v-2zm0 4h5v2H6v-2zm10-5h2v6h-2v-6z"/></svg>
 );
+const WeddingRingIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M13.34 2.1c-1.17-.35-2.39-.54-3.64-.54-4.22 0-7.88 2.02-10.23 5.03l1.55 1.29c1.9-2.39 4.81-3.82 8.04-3.82.91 0 1.77.13 2.58.37l-1.01 1.01c-.43-.1-.87-.15-1.32-.15-3.31 0-6 2.69-6 6s2.69 6 6 6c.45 0 .89-.05 1.32-.15l-1.01 1.01c-.81.24-1.67.37-2.58.37-3.23 0-6.14-1.43-8.04-3.82L-1.53 17.3c2.35 3.01 6.01 5.03 10.23 5.03 1.25 0 2.47-.19 3.64-.54L20.29 23l1.41-1.41-8.36-8.36z M20 12c0-3.31-2.69-6-6-6-.45 0-.89.05-1.32.15l1.01-1.01c.81-.24 1.67-.37 2.58-.37 3.23 0 6.14 1.43 8.04 3.82l1.55-1.29C22.52 4.31 18.86 2.29 14.64 2.29c-1.25 0-2.47.19-3.64.54L4.12 16H4c-1.1 0-2 .9-2 2s.9 2 2 2h.12l-1.29 1.29 1.41 1.41L21.41 2.59 20 1.18z"/></svg>
+);
+const NatureIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M13 16.12c-3.39 0-6.13-2.73-6.13-6.12 0-3.38 2.74-6.12 6.13-6.12s6.13 2.74 6.13 6.12c0 3.39-2.74 6.12-6.13 6.12zM13 2.88c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zM1 21h12v2H1z"/></svg>
+);
+const CityIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M15 11V5l-3-3-3 3v6H2v10h11v-5h-2v3H4v-6h9v5h2v-3h2v-2h-4z"/></svg>
+);
+const ProductIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.81.97H5.44l.8-.97zM5 19V8h14v11H5z"/></svg>
+);
+export const CustomPromptIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83zM3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
+);
+
 
 // Illustrations for Image Types
 const PortraitIllustrationIcon: React.FC<{ className?: string }> = ({ className = 'h-10 w-10' }) => (
@@ -54,6 +70,24 @@ const FullBodyIllustrationIcon: React.FC<{ className?: string }> = ({ className 
     </svg>
 );
 
+// Icons for Aspect Ratios
+const LandscapeIcon: React.FC<{ className?: string }> = ({ className = 'h-6 w-6' }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+    </svg>
+);
+const PortraitIcon: React.FC<{ className?: string }> = ({ className = 'h-6 w-6' }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="8" y="3" width="8" height="18" rx="2" />
+    </svg>
+);
+const SquareIcon: React.FC<{ className?: string }> = ({ className = 'h-6 w-6' }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+);
+
+
 // Icons for Accessories
 export const OutfitIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 0-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H20.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/><path d="m20.15 10-1.3-7.14"/><path d="M3.85 10 2.55 2.86"/><path d="M12 10v12"/><path d="M6 22h12"/></svg>
@@ -73,10 +107,44 @@ export const GlassesIcon: React.FC<{ className?: string }> = ({ className = 'w-6
 
 export const STYLE_TABS: StyleTab[] = [
     { id: 'style', name: 'Phong Cách' },
+    { id: 'wedding', name: 'Ảnh Cưới' },
+    { id: 'product', name: 'Sản Phẩm' },
     { id: 'celebrity', name: 'Ghép với Sao' },
     { id: 'travel', name: 'Du lịch' },
     { id: 'panorama', name: 'Toàn cảnh' },
 ];
+
+const WEDDING_STYLES: Style[] = [
+    { 
+        id: 'wedding_studio', 
+        name: 'Studio Lãng mạn', 
+        icon: WeddingRingIcon, 
+        category: 'wedding', 
+        prompt: "trong một studio ảnh cưới cao cấp, lãng mạn. Bối cảnh là một phông nền tối giản, thanh lịch với các tông màu trung tính hoặc pastel. Ánh sáng được dàn dựng chuyên nghiệp, sử dụng ánh sáng softbox mềm mại để tôn lên vẻ đẹp tự nhiên và tạo không khí ấm cúng, thân mật. Bố cục ảnh tập trung vào sự kết nối tình cảm và biểu cảm hạnh phúc của cặp đôi." 
+    },
+    { 
+        id: 'wedding_outdoor', 
+        name: 'Ngoại cảnh Thiên nhiên', 
+        icon: NatureIcon, 
+        category: 'wedding', 
+        prompt: "giữa một khung cảnh thiên nhiên hùng vĩ hoặc thơ mộng, chẳng hạn như trên một bãi biển lúc hoàng hôn, trong một khu rừng xanh mát, hoặc trên một ngọn đồi lộng gió. Ánh sáng tự nhiên được tận dụng tối đa để tạo ra những bức ảnh trong trẻo, sống động. Trang phục của cặp đôi hài hòa với thiên nhiên, có thể là váy cưới thướt tha và bộ suit màu sáng." 
+    },
+    { 
+        id: 'wedding_classic', 
+        name: 'Cổ điển & Hoài niệm', 
+        icon: CameraIcon, 
+        category: 'wedding', 
+        prompt: "theo phong cách cổ điển, vượt thời gian. Bối cảnh có thể là một tòa nhà kiến trúc cổ, một thư viện sang trọng, hoặc một khu vườn kiểu châu Âu. Tông màu ảnh có thể là đen trắng hoặc màu film vintage, mang lại cảm giác hoài niệm và sang trọng. Trang phục của cặp đôi mang hơi hướng cổ điển, lịch lãm."
+    },
+    { 
+        id: 'wedding_modern', 
+        name: 'Thành thị & Hiện đại', 
+        icon: CityIcon, 
+        category: 'wedding', 
+        prompt: "trong bối cảnh thành phố hiện đại và năng động. Cặp đôi có thể đứng trên sân thượng của một tòa nhà chọc trời với view toàn cảnh thành phố về đêm, hoặc đi dạo trên một con phố sầm uất. Phong cách ảnh táo bạo, thời trang và đầy cá tính, thể hiện sự năng động của tình yêu đô thị."
+    },
+];
+
 
 const REGULAR_STYLES: Style[] = [
     { id: 'businessman', name: 'Doanh nhân Hiện đại', icon: UserTieIcon, category: 'style', prompt: 'một bức chân dung doanh nhân chuyên nghiệp và hiện đại. Người trong ảnh mặc một bộ vest công sở lịch lãm. Bối cảnh là một văn phòng hiện đại, sang trọng với ánh sáng studio.' },
@@ -88,6 +156,93 @@ const REGULAR_STYLES: Style[] = [
     { id: 'magazine', name: 'Tạp chí Nổi tiếng', icon: StarIcon, category: 'style', prompt: 'ảnh bìa một tạp chí thời trang nổi tiếng. Trang phục thời thượng, phong cách. Ánh sáng hoàn hảo như trong studio.' },
     { id: 'newspaper', name: 'Giang hồ Hồ báo', icon: NewspaperIcon, category: 'style', prompt: "phong cách 'giang hồ' cổ điển, giống như trong các bộ phim xã hội đen Hồng Kông, với tông màu cũ, hơi ngả vàng và ánh sáng kịch tính." },
 ];
+
+const generateProductStyles = (basePrompt: string, items: string[]): Style[] => {
+    return items.map(item => {
+        const id = `product_${basePrompt}_${item.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const prompt = basePrompt.replace('{item}', item);
+        return {
+            id,
+            name: item,
+            icon: () => null, // No individual icons needed for grid items
+            category: 'product',
+            prompt: prompt,
+        };
+    });
+};
+
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+    {
+        id: 'product_model',
+        name: 'Với Người Mẫu',
+        icon: UserTieIcon,
+        styles: generateProductStyles('được trình bày bởi {item}', [
+            'Người mẫu nữ châu Á tóc dài', 'Người mẫu nam châu Âu lịch lãm', 'Người mẫu phi giới tính cá tính', 'Người mẫu fitness trong phòng gym', 'Doanh nhân thành đạt tại văn phòng',
+            'Gia đình đang sử dụng sản phẩm', 'Nhóm bạn trẻ trong buổi dã ngoại', 'Người mẫu beauty với làn da hoàn hảo', 'Cận cảnh bàn tay người mẫu', 'Người mẫu trong trang phục dạ hội',
+            'Người mẫu nam mặc suit', 'Người mẫu nữ mặc váy trắng', 'Người mẫu tương tác với sản phẩm', 'Người mẫu cười rạng rỡ', 'Người mẫu nhìn thẳng vào ống kính',
+            'Người mẫu trong bối cảnh tối giản', 'Người mẫu trên đường phố thành thị', 'Người mẫu trong quán cà phê sang trọng', 'Người mẫu lớn tuổi thanh lịch', 'Người mẫu nhí đáng yêu',
+            'Người mẫu tóc ngắn năng động', 'Người mẫu nam có râu quai nón', 'Người mẫu nữ với tàn nhang tự nhiên', 'Người mẫu đang tập yoga', 'Đầu bếp chuyên nghiệp trong bếp',
+            'Nghệ sĩ trong studio', 'Vận động viên đang hoạt động', 'Người mẫu trong bối cảnh công nghệ', 'Người mẫu với phong cách retro', 'Cặp đôi người mẫu tình cảm',
+            'Người mẫu nữ da màu tự tin', 'Người mẫu nam với hình xăm', 'Người mẫu mặc trang phục truyền thống', 'Bóng lưng của người mẫu', 'Người mẫu đang nhảy múa',
+            'Người mẫu dưới mưa', 'Người mẫu trong tuyết', 'Người mẫu trên sa mạc', 'Người mẫu dưới nước', 'Người mẫu với thú cưng',
+            'Người mẫu phản chiếu trong gương', 'Người mẫu trong bối cảnh công nghiệp', 'Người mẫu với ánh sáng neon', 'Ảnh chụp đen trắng với người mẫu', 'Người mẫu với biểu cảm ấn tượng',
+            'Người mẫu trong trang phục bơi', 'Người mẫu trên du thuyền', 'Người mẫu trong thư viện', 'Người mẫu chơi nhạc cụ', 'Người mẫu đọc sách', 'Người mẫu với ly cocktail'
+        ])
+    },
+    {
+        id: 'product_pharmacy',
+        name: 'Tại Nhà Thuốc',
+        icon: ProductIcon,
+        styles: generateProductStyles('trưng bày trên kệ tại nhà thuốc {item}', [
+            'FPT Long Châu sáng sủa', 'Pharmacity hiện đại', 'An Khang ngăn nắp', 'Guardian (khu vực VN)', 'Watsons (khu vực VN)', 'Medicare (khu vực VN)',
+            'Phano Pharmacy uy tín', 'Trung Sơn Pharma', 'Nhà thuốc ECO Pharmacy', 'Nhà thuốc Glee Pharmacy', 'Vistar Pharmacy',
+            'Một nhà thuốc lớn ở Hà Nội', 'Một nhà thuốc ở TP.HCM', 'Quầy thuốc bệnh viện', 'Nhà thuốc theo chuẩn GPP', 'Nhà thuốc truyền thống',
+            'Kệ trưng bày sản phẩm nổi bật', 'Phía sau quầy dược sĩ', 'Trên tay dược sĩ đang tư vấn', 'Khách hàng đang xem sản phẩm', 'Tủ kính trưng bày cao cấp',
+            'Nhà thuốc Long Châu (view từ ngoài)', 'Bên trong Pharmacity có dược sĩ', 'Kệ sản phẩm chức năng An Khang', 'Góc trưng bày của Guardian', 'Kệ mỹ phẩm tại Watsons',
+            'Giá thuốc của Medicare', 'Quầy thanh toán Phano Pharmacy', 'Kệ thuốc cho trẻ em', 'Kệ sản phẩm chăm sóc da', 'Kệ vitamin và khoáng chất',
+            'Nhà thuốc có tông màu xanh lá', 'Nhà thuốc có nội thất gỗ', 'Nhà thuốc tối giản, sạch sẽ', 'Nhà thuốc đông khách', 'Nhà thuốc vào ban đêm',
+            'Góc nhìn từ dưới lên kệ thuốc', 'Ảnh chụp macro sản phẩm trên kệ', 'Sản phẩm và logo nhà thuốc', 'Dược sĩ mặc áo blouse trắng', 'Kệ thuốc được sắp xếp khoa học',
+            'Nhà thuốc trong trung tâm thương mại', 'Nhà thuốc ở góc phố', 'Ánh sáng tự nhiên chiếu vào', 'Bảng hiệu nhà thuốc rõ nét', 'Không gian tư vấn riêng',
+            'Kệ sản phẩm khuyến mãi', 'Sản phẩm được xếp thành kim tự tháp', 'Sản phẩm cùng các thương hiệu nổi tiếng khác', 'Tủ thuốc có khóa', 'Nền là các hộp thuốc mờ ảo', 'Sản phẩm trên bàn tư vấn'
+        ])
+    },
+    {
+        id: 'product_luxury',
+        name: 'Bối Cảnh Sang Trọng',
+        icon: StarIcon,
+        styles: generateProductStyles('đặt trong bối cảnh {item}', [
+            'Mặt đá cẩm thạch đen vân vàng', 'Nền lụa trắng mềm mại', 'Bệ trưng bày bằng kính', 'Bên cạnh chai rượu whisky', 'Trong hộp quà cao cấp',
+            'Trên bàn trang điểm lộng lẫy', 'Trong phòng tắm khách sạn 5 sao', 'Trên đàn piano màu đen bóng', 'Bên cạnh một chiếc đồng hồ Thụy Sĩ', 'Trên một cuốn sách bìa da',
+            'Flatlay với các phụ kiện vàng', 'Trên nền vải nhung đỏ', 'Trong một nội thất tối giản', 'Phản chiếu trên mặt nước tĩnh', 'Giữa những viên kim cương',
+            'Trên bệ bê tông được đánh bóng', 'Với ánh sáng ấn tượng (spotlight)', 'Bên cạnh một tác phẩm điêu khắc', 'Trong một chiếc xe hơi sang trọng', 'Trên bàn gỗ quý',
+            'Nền là kiến trúc tối giản', 'Trong một phòng trưng bày nghệ thuật', 'Bên cạnh dụng cụ pha chế cocktail', 'Trên một khay bạc', 'Với hiệu ứng khói mờ ảo',
+            'Trong một vali du lịch cổ điển', 'Trên nền kết cấu kim loại', 'Bên cạnh một cây bút máy', 'Giữa những cánh hoa hồng', 'Trên một chiếc du thuyền',
+            'Trong một căn penthouse có view thành phố', 'Bên cạnh hồ bơi vô cực', 'Trên một bậc thang xoắn ốc', 'Nền là một bức tường gạch thô', 'Với ánh sáng hoàng hôn ấm áp',
+            'Trong một thư viện tư nhân', 'Trên một lò sưởi bằng đá', 'Bên cạnh một bộ cờ vua', 'Trong một vườn thiền Nhật Bản', 'Trên một tấm da thuộc',
+            'Giữa các dụng cụ kaligrafi', 'Nền là bản đồ cổ', 'Bên cạnh các chai nước hoa', 'Trong một hầm rượu vang', 'Trên một khay đá phiến đen',
+            'Với hiệu ứng đổ bóng dài', 'Chụp ảnh macro chi tiết', 'Bên cạnh một chiếc máy ảnh film', 'Trong một hộp nhạc cổ', 'Trên một tấm gương', 'Với các hình khối hình học'
+        ])
+    },
+    {
+        id: 'product_nature',
+        name: 'Hòa mình Thiên Nhiên',
+        icon: LeafIcon,
+        styles: generateProductStyles('đặt trên {item}', [
+            'Tảng đá phủ rêu trong rừng', 'Bãi cát trắng mịn của bãi biển', 'Một chiếc lá nhiệt đới lớn', 'Nền gỗ mộc mạc', 'Bề mặt băng giá',
+            'Đám sỏi cuội ở bờ suối', 'Một gốc cây cổ thụ', 'Cánh đồng hoa oải hương', 'Nền là những con sóng biển', 'Một vách đá nhìn ra biển',
+            'Giữa vườn thảo mộc xanh tươi', 'Trên một lớp tuyết mới rơi', 'Bên cạnh một dòng dung nham', 'Trong một hang động thạch nhũ', 'Trên một sa mạc cát',
+            'Giữa những quả thông trong rừng', 'Trên một cây cầu gỗ', 'Bên cạnh một thác nước', 'Trên một cánh đồng lúa chín', 'Lơ lửng giữa những đám mây',
+            'Trên một tảng băng trôi', 'Bên trong một bông hoa lớn', 'Trên một bãi cỏ đẫm sương', 'Giữa một rừng tre', 'Trên một bãi biển đá đen',
+            'Nền là bầu trời đầy sao', 'Bên cạnh một tổ chim', 'Trong một khu vườn Nhật Bản', 'Trên một đống lá mùa thu', 'Bên cạnh một cây xương rồng',
+            'Phản chiếu trong một vũng nước mưa', 'Trên một cánh đồng hoa hướng dương', 'Giữa những cây nấm phát sáng', 'Trên một rạn san hô', 'Bên trong một vỏ sò lớn',
+            'Nền là cực quang phương bắc', 'Trên một thân cây bạch dương', 'Giữa những cây dương xỉ', 'Trên một vách đá sa thạch', 'Bên cạnh một hồ nước trên núi',
+            'Giữa những dây leo chằng chịt', 'Trong một vườn cây ăn quả', 'Trên một bãi biển vỏ sò', 'Nền là một cơn bão ở xa', 'Bên cạnh một con suối nước nóng',
+            'Trong một cánh đồng chè xanh', 'Trên một tảng đá granite', 'Giữa những bông hoa sen', 'Bên cạnh một tổ ong', 'Trong một khu rừng bị cháy', 'Trên một cồn cát'
+        ])
+    }
+];
+
+const ALL_PRODUCT_STYLES: Style[] = PRODUCT_CATEGORIES.flatMap(category => category.styles);
 
 const CELEBRITY_SUGGESTIONS: string[] = [
     // Vietnamese
@@ -168,12 +323,25 @@ const PANORAMA_STYLES: Style[] = PANORAMA_SUGGESTIONS.map(name => ({
     prompt: `Đặt người trong ảnh gốc vào bối cảnh toàn cảnh ${name}.`
 }));
 
-export const STYLES: Style[] = [...REGULAR_STYLES, ...CELEBRITY_STYLES, ...TRAVEL_STYLES, ...PANORAMA_STYLES];
+export const STYLES: Style[] = [
+    ...REGULAR_STYLES, 
+    ...WEDDING_STYLES,
+    ...ALL_PRODUCT_STYLES,
+    ...CELEBRITY_STYLES, 
+    ...TRAVEL_STYLES, 
+    ...PANORAMA_STYLES
+];
 
 export const IMAGE_TYPES: ImageType[] = [
     { id: 'portrait', name: 'Chân dung', icon: PortraitIllustrationIcon },
     { id: 'half_body', name: 'Nửa người', icon: HalfBodyIllustrationIcon },
     { id: 'full_body', name: 'Toàn thân', icon: FullBodyIllustrationIcon },
+];
+
+export const ASPECT_RATIOS: AspectRatio[] = [
+    { id: 'landscape', name: 'Ngang', icon: LandscapeIcon },
+    { id: 'portrait', name: 'Dọc', icon: PortraitIcon },
+    { id: 'square', name: 'Vuông', icon: SquareIcon },
 ];
 
 export const ACCESSORY_CATEGORIES = [
@@ -254,9 +422,9 @@ export const STYLE_ACCESSORY_DEFAULTS: AccessoryDefaults = {
     }
 };
 
-// FIX: Corrected the type for BASE_ACCESSORY_DEFAULTS from AccessoryDefaults to Record<string, Accessory>.
-// The previous type was incorrect for this data structure and caused the 'Type 'string' is not assignable to type 'Accessory'' error.
-export const BASE_ACCESSORY_DEFAULTS: Record<string, Accessory> = {
+// FIX: Corrected the type for BASE_ACCESSORY_DEFAULTS to Partial<Record<string, Accessory>>.
+// This makes it consistent with STYLE_ACCESSORY_DEFAULTS and resolves potential type conflicts.
+export const BASE_ACCESSORY_DEFAULTS: Partial<Record<string, Accessory>> = {
     outfit: { item: 'Áo thun', color: 'trắng' },
     footwear: { item: 'Giày thể thao (sneakers)', color: 'trắng' },
 };

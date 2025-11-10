@@ -1,13 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Photo Booth</title>
+    
+    <!-- SEO Meta Tags -->
+    <title>AI Photoshoot - Tạo Ảnh Chuyên Nghiệp với Trí Tuệ Nhân Tạo</title>
+    <meta name="description" content="Biến đổi ảnh của bạn với AI Photoshoot. Tải ảnh lên, chọn từ hàng trăm phong cách, ghép ảnh cưới, du lịch, hoặc hóa thân thành người nổi tiếng. Tạo ra những bức ảnh độc đáo và chuyên nghiệp chỉ trong vài giây." />
+    <link rel="canonical" href="https://aiphotoshoot.example.com/" /> <!-- Thay thế bằng URL thực của bạn -->
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://aiphotoshoot.example.com/" /> <!-- Thay thế bằng URL thực của bạn -->
+    <meta property="og:title" content="AI Photoshoot - Tạo Ảnh Chuyên Nghiệp với Trí Tuệ Nhân Tạo" />
+    <meta property="og:description" content="Tạo ra những bức ảnh độc đáo và chuyên nghiệp chỉ trong vài giây với công nghệ AI tiên tiến." />
+    <meta property="og:image" content="https://aiphotoshoot.example.com/social-preview.png" /> <!-- Thay thế bằng URL ảnh xem trước của bạn -->
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://aiphotoshoot.example.com/" /> <!-- Thay thế bằng URL thực của bạn -->
+    <meta property="twitter:title" content="AI Photoshoot - Tạo Ảnh Chuyên Nghiệp với Trí Tuệ Nhân Tạo" />
+    <meta property="twitter:description" content="Tạo ra những bức ảnh độc đáo và chuyên nghiệp chỉ trong vài giây với công nghệ AI tiên tiến." />
+    <meta property="twitter:image" content="https://aiphotoshoot.example.com/social-preview.png" /> <!-- Thay thế bằng URL ảnh xem trước của bạn -->
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
 {
@@ -15,17 +34,56 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
 </script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: {
+            'glow-green': '0 0 20px 0 rgba(52, 211, 153, 0.4)',
+          },
+        },
+      },
+    }
+  </script>
 <style>
   body {
     font-family: 'Outfit', sans-serif;
+    background-color: #05140D;
+  }
+
+  /* New LED Text Effect */
+  .led-text-effect {
+    background-image: linear-gradient(
+      90deg,
+      #10b981, /* emerald-500 */
+      #6ee7b7, /* emerald-300 */
+      #a7f3d0, /* emerald-200 */
+      #6ee7b7, /* emerald-300 */
+      #10b981  /* emerald-500 */
+    );
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: led-flow 4s linear infinite;
+  }
+
+  @keyframes led-flow {
+    to {
+      background-position: 200% center;
+    }
   }
 </style>
 </head>
-  <body class="bg-slate-950">
+  <body class="bg-[#05140D]">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

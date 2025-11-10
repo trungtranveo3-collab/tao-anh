@@ -8,12 +8,25 @@ export interface Style {
   prompt: string;
 }
 
+export interface ProductCategory {
+  id: string;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  styles: Style[];
+}
+
 export interface StyleTab {
   id: string;
   name: string;
 }
 
 export interface ImageType {
+  id: string;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export interface AspectRatio {
   id: string;
   name: string;
   icon: React.ComponentType<{ className?: string }>;
