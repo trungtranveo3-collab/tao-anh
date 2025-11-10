@@ -45,7 +45,8 @@ interface UserProfile {
     status: 'pending' | 'approved';
 }
 
-const SESSION_STORAGE_KEY = 'gemini-api-key';
+const SESSION_STORAGE_KEY = 'gemini-api-key-session';
+const LOCAL_STORAGE_KEY = 'gemini-api-key-local';
 
 function App() {
   // Authentication State
@@ -142,18 +143,18 @@ function App() {
       }
       const genAI = new GoogleGenAI({ apiKey });
       setAi(genAI);
-      sessionStorage.setItem(SESSION_STORAGE_KEY, apiKey);
       setApiKeyError(null);
     } catch (e) {
       console.error("Failed to initialize GoogleGenAI:", e);
       setApiKeyError("Khởi tạo AI client thất bại. API Key có thể không hợp lệ.");
       setAi(null);
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   }, []);
 
   // New function for handling fresh key submission with verification
-  const handleApiKeySubmit = useCallback(async (apiKey: string) => {
+  const handleApiKeySubmit = useCallback(async (apiKey: string, remember: boolean) => {
       setIsVerifyingKey(true);
       setApiKeyError(null);
 
@@ -169,14 +170,21 @@ function App() {
           // Perform a lightweight test call to validate the key
           await genAI.models.generateContent({
               model: 'gemini-2.5-flash',
-              // FIX: The `contents` field was incorrectly formatted. For a simple text prompt, a string is sufficient.
               contents: 'test',
           });
 
           // If the test call succeeds, finalize setup
           setAi(genAI);
-          sessionStorage.setItem(SESSION_STORAGE_KEY, apiKey);
           setApiKeyError(null);
+
+          // Save key based on user's choice
+          if (remember) {
+              localStorage.setItem(LOCAL_STORAGE_KEY, apiKey);
+              sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          } else {
+              sessionStorage.setItem(SESSION_STORAGE_KEY, apiKey);
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+          }
 
       } catch (e: any) {
           console.error("API Key verification failed:", e);
@@ -192,6 +200,7 @@ function App() {
           }
           setAi(null);
           sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
       } finally {
           setIsVerifyingKey(false);
       }
@@ -202,6 +211,7 @@ function App() {
         await signOut(auth);
         // The onAuthStateChanged listener will automatically set all user states to null
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
         setAi(null);
         setApiKeyError(null);
         setShowAdminPanel(false); // Close admin panel on logout
@@ -211,11 +221,24 @@ function App() {
     }
   };
 
+  const handleChangeApiKey = () => {
+    setAi(null);
+    // Don't remove keys here, so the user can cancel and go back
+    setApiKeyError(null); // Clear any previous errors
+  };
+  
+  const handleCancelChangeApiKey = useCallback(() => {
+    const storedApiKey = localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (storedApiKey) {
+        initializeAiClient(storedApiKey);
+    }
+  }, [initializeAiClient]);
 
-  // Try to initialize AI client from session storage on mount
+
+  // Try to initialize AI client from storage on mount
   useEffect(() => {
     if (userProfile) { // Only initialize if user is approved
-        const storedApiKey = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        const storedApiKey = localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
         if (storedApiKey) {
           initializeAiClient(storedApiKey);
         }
@@ -316,6 +339,24 @@ function App() {
     const otherReady = activeTab !== 'wedding' && activeTab !== 'product' && sourceImages.length > 0;
     return (weddingReady || productReady || otherReady) && !!ai;
   }, [sourceImages, coupleSourceImages, productSourceImage, activeTab, ai, productPrompt, selectedStyle]);
+
+  const disabledTooltip = useMemo(() => {
+      if (isReady) return '';
+      if (!ai) return 'Vui lòng cung cấp API Key hợp lệ và nhấn "Lưu & Bắt đầu".';
+      if (activeTab === 'wedding' && !coupleSourceImages.every(img => img !== null)) {
+          return 'Vui lòng tải lên đủ hai ảnh cho cặp đôi.';
+      }
+      if (activeTab === 'product' && !productSourceImage) {
+          return 'Vui lòng tải lên ảnh sản phẩm.';
+      }
+      if (activeTab === 'product' && !productPrompt && selectedStyle.category !== 'product') {
+          return 'Vui lòng nhập mô tả hoặc chọn một bối cảnh cho sản phẩm.';
+      }
+      if (activeTab !== 'wedding' && activeTab !== 'product' && sourceImages.length === 0) {
+          return 'Vui lòng tải lên ít nhất một ảnh gốc.';
+      }
+      return 'Vui lòng hoàn thành các bước trên để bắt đầu.'; // A generic fallback
+  }, [isReady, ai, activeTab, coupleSourceImages, productSourceImage, sourceImages, productPrompt, selectedStyle]);
 
   // Construct the final prompt for the API
   const constructPrompt = useCallback((): string => {
@@ -478,6 +519,7 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
         setApiKeyError('API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra và nhập lại.');
         setAi(null);
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
       } else {
         setError('Đã xảy ra lỗi trong quá trình tạo ảnh. Vui lòng kiểm tra console để biết thêm chi tiết.');
       }
@@ -555,13 +597,22 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
   }
 
   if (!ai) {
-    return <ApiKeyManager onApiKeySubmit={handleApiKeySubmit} error={apiKeyError} isLoading={isVerifyingKey} />;
+    // We determine if the user can close this screen. They can close if they are *changing* a key,
+    // which means a key must already exist in storage.
+    const canClose = !!(localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY));
+    return <ApiKeyManager 
+              onApiKeySubmit={handleApiKeySubmit} 
+              error={apiKeyError} 
+              isLoading={isVerifyingKey} 
+              canClose={canClose}
+              onClose={handleCancelChangeApiKey}
+            />;
   }
 
   return (
     <div className="min-h-screen text-slate-300">
       <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8 relative">
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 flex items-center space-x-4 z-20">
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 flex items-center space-x-2 sm:space-x-4 z-20">
             <span className="text-sm text-slate-300 hidden sm:block bg-slate-900/50 backdrop-blur-sm px-3 py-1 rounded-full">{user.email}</span>
             {userProfile.role === 'admin' && (
                 <button
@@ -571,6 +622,13 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
                     Bảng Quản trị
                 </button>
             )}
+             <button 
+                onClick={handleChangeApiKey} 
+                className="px-4 py-2 text-sm font-semibold bg-yellow-600/80 hover:bg-yellow-600 backdrop-blur-sm text-white rounded-lg transition-colors shadow-md"
+                title="Thay đổi API Key"
+            >
+                Đổi API Key
+            </button>
             <button 
               onClick={handleLogout} 
               className="px-4 py-2 text-sm font-semibold bg-red-600/80 hover:bg-red-600 backdrop-blur-sm text-white rounded-lg transition-colors shadow-md"
@@ -672,15 +730,12 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
                             onPanoramaPromptChange={setPanoramaPrompt}
                         />
                         {mode === 'single' && activeTab !== 'wedding' && activeTab !== 'product' && (
-                            <>
-                                <div className="border-t border-emerald-400/20"></div>
-                                <AccessorySelector 
-                                    accessories={accessories}
-                                    onAccessoryChange={handleAccessoryChange}
-                                    isEnabled={isAccessoryEnabled}
-                                    onToggleEnabled={setIsAccessoryEnabled}
-                                />
-                            </>
+                            <AccessorySelector 
+                                accessories={accessories}
+                                onAccessoryChange={handleAccessoryChange}
+                                isEnabled={isAccessoryEnabled}
+                                onToggleEnabled={setIsAccessoryEnabled}
+                            />
                         )}
                     </Panel>
                 </div>
@@ -695,6 +750,7 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
                         onGenerate={handleGenerate}
                         isLoading={isLoading}
                         isReady={isReady}
+                        disabledTooltip={disabledTooltip}
                         numberOfImages={numberOfImages}
                         onNumberOfImagesChange={setNumberOfImages}
                         selectedAspectRatio={selectedAspectRatio}

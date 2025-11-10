@@ -18,6 +18,14 @@ export const AuthManager: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
+    const handleTabChange = (loginState: boolean) => {
+        setIsLogin(loginState);
+        setError(null);
+        setMessage(null);
+        // Don't clear email so user doesn't have to re-type if they mis-click
+        // setPassword(''); 
+    };
+
     const handleAuthAction = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -110,11 +118,7 @@ export const AuthManager: React.FC = () => {
                                 <button
                                     type="button"
                                     className="font-semibold underline hover:text-white transition-colors"
-                                    onClick={() => {
-                                        setIsLogin(true);
-                                        setError(null);
-                                        setMessage(null);
-                                    }}
+                                    onClick={() => handleTabChange(true)}
                                 >
                                     đăng nhập
                                 </button>
@@ -161,14 +165,31 @@ export const AuthManager: React.FC = () => {
                 <style>
                     {`@keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}
                 </style>
+                <div className="text-center mb-8">
+                    <h1 className="led-text-effect text-3xl sm:text-4xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}>
+                        AI Photoshoot
+                    </h1>
+                    <h2 className="text-xl font-bold text-slate-100 mt-4">Biến Ý Tưởng Thành Tuyệt Tác</h2>
+                    <p className="mt-2 text-slate-400 text-sm">Đăng nhập hoặc đăng ký để bắt đầu tạo ảnh chuyên nghiệp với AI.</p>
+                </div>
                 <Panel className="animate-fade-in">
+                     <div className="p-1 bg-slate-900 rounded-lg flex space-x-2 shadow-lg mb-6">
+                        <button 
+                            onClick={() => handleTabChange(true)}
+                            className={`flex-1 px-6 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${isLogin ? 'bg-emerald-500 text-white shadow-glow-green' : 'text-slate-300 hover:bg-slate-700'}`}
+                            aria-pressed={isLogin}
+                        >
+                            Đăng nhập
+                        </button>
+                        <button 
+                            onClick={() => handleTabChange(false)}
+                            className={`flex-1 px-6 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${!isLogin ? 'bg-emerald-500 text-white shadow-glow-green' : 'text-slate-300 hover:bg-slate-700'}`}
+                            aria-pressed={!isLogin}
+                        >
+                            Đăng ký
+                        </button>
+                    </div>
                     <form onSubmit={handleAuthAction} className="flex flex-col space-y-6">
-                        <div className="text-center">
-                             <h1 className="led-text-effect text-3xl sm:text-4xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}>
-                                AI Photoshoot
-                            </h1>
-                            <h2 className="text-xl font-bold text-slate-100 mt-4">{isLogin ? 'Đăng nhập' : 'Đăng ký'}</h2>
-                        </div>
                         
                         {error && (
                              <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm" role="alert">
@@ -213,7 +234,7 @@ export const AuthManager: React.FC = () => {
                         </div>
                         
                         {isLogin && (
-                             <div className="text-right text-sm">
+                             <div className="text-right text-sm -mt-2">
                                 <button type="button" onClick={handlePasswordReset} className="text-emerald-400 hover:underline" disabled={isLoading}>
                                     Quên mật khẩu?
                                 </button>
@@ -231,24 +252,8 @@ export const AuthManager: React.FC = () => {
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             )}
-                            {isLoading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}
+                            {isLoading ? 'Đang xử lý...' : (isLogin ? 'Tiếp tục Sáng tạo' : 'Bắt đầu Miễn phí')}
                         </button>
-                        
-                        <div className="text-center text-sm text-slate-400">
-                           {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
-                            <button 
-                                type="button"
-                                onClick={() => {
-                                    setIsLogin(!isLogin);
-                                    setError(null);
-                                    setMessage(null);
-                                }}
-                                className="text-emerald-400 hover:underline ml-1 font-semibold"
-                                disabled={isLoading}
-                            >
-                                {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
-                            </button>
-                        </div>
                     </form>
                 </Panel>
             </main>
