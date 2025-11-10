@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { Panel } from './Panel';
 
@@ -16,18 +18,18 @@ export const PendingApproval: React.FC<PendingApprovalProps> = ({ email, onLogou
                 <Panel className="animate-fade-in">
                     <div className="flex flex-col space-y-6">
                          <h1 className="led-text-effect text-3xl sm:text-4xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}>
-                            Yêu cầu đã được gửi!
+                            Tài khoản chưa được kích hoạt
                         </h1>
                         <p className="text-slate-400">
-                            Cảm ơn bạn đã đăng ký! Chúng tôi đang xem xét tài khoản <strong className="text-emerald-400">{email}</strong> của bạn để đảm bảo chất lượng cộng đồng.
+                           Tài khoản <strong className="text-emerald-400">{email}</strong> của bạn hiện không hoạt động.
                         </p>
                         <p className="text-slate-400">
-                           Quá trình này thường mất khoảng vài giờ. <strong>Chúng tôi sẽ gửi email cho bạn ngay khi tài khoản được kích hoạt.</strong>
+                           Điều này có thể do bạn là người dùng mới hoặc thời gian sử dụng của bạn đã hết hạn. Vui lòng chờ quản trị viên xem xét và phê duyệt.
                         </p>
 
                         <div className="border-t border-emerald-400/20 pt-6 space-y-4">
-                            <p className="text-sm text-slate-500">
-                                Trong lúc chờ đợi, bạn có thể xem qua các tác phẩm khác của cộng đồng (sắp ra mắt).
+                             <p className="text-sm text-slate-500">
+                                Chúng tôi sẽ gửi email cho bạn ngay khi tài khoản được kích hoạt lại.
                             </p>
                             <button 
                                 onClick={onLogout} 

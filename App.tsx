@@ -1,8 +1,9 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from './firebaseConfig';
 
 
@@ -20,6 +21,7 @@ import { ApiKeyManager } from './components/ApiKeyManager';
 import { AuthManager } from './components/AuthManager';
 import { AdminPanel } from './components/AdminPanel';
 import { PendingApproval } from './components/PendingApproval';
+import { UserMenu } from './components/UserMenu';
 
 
 // Constants and Types
@@ -43,6 +45,7 @@ interface UserProfile {
     email: string;
     role: 'user' | 'admin';
     status: 'pending' | 'approved';
+    expiresAt?: Timestamp;
 }
 
 const SESSION_STORAGE_KEY = 'gemini-api-key-session';
@@ -102,28 +105,39 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser && currentUser.emailVerified) {
             setUser(currentUser);
-            // Fetch user profile from Firestore
             const userDocRef = doc(db, 'users', currentUser.uid);
             const userDocSnap = await getDoc(userDocRef);
 
             if (userDocSnap.exists()) {
                 const profile = userDocSnap.data() as UserProfile;
+
+                // Check for account expiration
+                if (profile.status === 'approved' && profile.expiresAt) {
+                    const expirationDate = profile.expiresAt.toDate();
+                    if (expirationDate < new Date()) {
+                        // Account has expired, revert status to pending
+                        await updateDoc(userDocRef, { status: 'pending' });
+                        setUserProfile(null);
+                        setIsPendingApproval(true);
+                        setIsAuthLoading(false);
+                        return; // Stop further execution
+                    }
+                }
+                
+                // Continue with normal status check
                 if (profile.status === 'approved') {
                     setUserProfile(profile);
                     setIsPendingApproval(false);
                 } else {
-                    // User is logged in but not approved
                     setUserProfile(null);
                     setIsPendingApproval(true);
                 }
             } else {
-                // User exists in Auth but not in Firestore (edge case)
                 console.error("User data not found in Firestore.");
                 setUserProfile(null);
-                setIsPendingApproval(true); // Treat as pending
+                setIsPendingApproval(true);
             }
         } else {
-            // User is not logged in or email not verified
             setUser(null);
             setUserProfile(null);
             setIsPendingApproval(false);
@@ -131,7 +145,6 @@ function App() {
         setIsAuthLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
   
@@ -611,44 +624,32 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
 
   return (
     <div className="min-h-screen text-slate-300">
-      <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8 relative">
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 flex items-center space-x-2 sm:space-x-4 z-20">
-            <span className="text-sm text-slate-300 hidden sm:block bg-slate-900/50 backdrop-blur-sm px-3 py-1 rounded-full">{user.email}</span>
-            {userProfile.role === 'admin' && (
-                <button
-                    onClick={() => setShowAdminPanel(!showAdminPanel)}
-                    className="px-4 py-2 text-sm font-semibold bg-sky-600/80 hover:bg-sky-600 backdrop-blur-sm text-white rounded-lg transition-colors shadow-md"
-                >
-                    Bảng Quản trị
-                </button>
-            )}
-             <button 
-                onClick={handleChangeApiKey} 
-                className="px-4 py-2 text-sm font-semibold bg-yellow-600/80 hover:bg-yellow-600 backdrop-blur-sm text-white rounded-lg transition-colors shadow-md"
-                title="Thay đổi API Key"
-            >
-                Đổi API Key
-            </button>
-            <button 
-              onClick={handleLogout} 
-              className="px-4 py-2 text-sm font-semibold bg-red-600/80 hover:bg-red-600 backdrop-blur-sm text-white rounded-lg transition-colors shadow-md"
-            >
-                Đăng xuất
-            </button>
-        </div>
-
+      <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
         {showAdminPanel && userProfile.role === 'admin' && (
-            <AdminPanel onClose={() => setShowAdminPanel(false)} />
+            <AdminPanel onClose={() => setShowAdminPanel(false)} currentUserProfile={userProfile} />
         )}
 
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-12 pb-8 border-b border-emerald-400/20">
+            {/* Title and Subtitle */}
+            <div className="text-center sm:text-left">
+                <h1 className="led-text-effect text-5xl sm:text-6xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 15px rgba(52, 211, 153, 0.5), 0 0 25px rgba(52, 211, 153, 0.3)' }}>
+                    AI Photoshoot
+                </h1>
+                <p className="mt-4 text-lg sm:text-xl text-slate-200 max-w-3xl mx-auto sm:mx-0 tracking-wide">
+                    Biến mọi bức ảnh thành kiệt tác chuyên nghiệp chỉ trong vài giây.
+                </p>
+            </div>
 
-        <header className="text-center mb-12 pb-8 border-b border-emerald-400/20">
-          <h1 className="led-text-effect text-5xl sm:text-6xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 15px rgba(52, 211, 153, 0.5), 0 0 25px rgba(52, 211, 153, 0.3)' }}>
-            AI Photoshoot
-          </h1>
-          <p className="mt-4 text-lg sm:text-xl text-slate-200 max-w-3xl mx-auto tracking-wide">
-            Biến mọi bức ảnh thành kiệt tác chuyên nghiệp chỉ trong vài giây.
-          </p>
+            {/* User Controls */}
+            <div className="flex-shrink-0">
+                <UserMenu
+                    user={user}
+                    userProfile={userProfile}
+                    onLogout={handleLogout}
+                    onChangeApiKey={handleChangeApiKey}
+                    onShowAdminPanel={() => setShowAdminPanel(true)}
+                />
+            </div>
         </header>
         
         {activeTab !== 'wedding' && activeTab !== 'product' && (
@@ -680,7 +681,7 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
         )}
 
         <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                 {/* Step 1: Upload */}
                 <div className="w-full">
                     {activeTab === 'wedding' ? (

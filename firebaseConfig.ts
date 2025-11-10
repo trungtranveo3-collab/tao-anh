@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // HƯỚNG DẪN:
 // 1. Truy cập https://console.firebase.google.com/
@@ -10,11 +11,12 @@ import { getFirestore } from "firebase/firestore";
 // 5. Sao chép đối tượng cấu hình (firebaseConfig) và dán vào đây.
 // 6. QUAN TRỌNG: Vào mục Authentication -> Sign-in method và BẬT phương thức "Email/Password".
 // 7. QUAN TRỌNG: Vào mục Firestore Database, tạo cơ sở dữ liệu và thiết lập Rules.
+// 8. QUAN TRỌNG: Vào mục Storage, tạo một bucket lưu trữ.
 const firebaseConfig = {
   apiKey: "AIzaSyAROqhDGKi8zhSyReVTVlmy0eXVQSq1cHc",
   authDomain: "ai-photo-b93e1.firebaseapp.com",
   projectId: "ai-photo-b93e1",
-  storageBucket: "ai-photo-b93e1.firebasestorage.app",
+  storageBucket: "ai-photo-b93e1.appspot.com",
   messagingSenderId: "132271026945",
   appId: "1:132271026945:web:b37146289c4aee1e64e100",
   measurementId: "G-6Q2XT032SB"
@@ -28,3 +30,6 @@ export const auth = getAuth(app);
 
 // Khởi tạo Firestore Database
 export const db = getFirestore(app);
+
+// Khởi tạo Firebase Storage
+export const storage = getStorage(app);

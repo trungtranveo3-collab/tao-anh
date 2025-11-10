@@ -1,29 +1,78 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword,
     sendEmailVerification,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '../firebaseConfig';
 import { Panel } from './Panel';
+
+const UploadIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+);
+
 
 export const AuthManager: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    
     const [error, setError] = useState<React.ReactNode | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+
+    // Clean up the object URL to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (avatarPreview) {
+                URL.revokeObjectURL(avatarPreview);
+            }
+        };
+    }, [avatarPreview]);
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            if (avatarPreview) {
+                URL.revokeObjectURL(avatarPreview);
+            }
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        setAvatarFile(null);
+        if (avatarPreview) {
+            URL.revokeObjectURL(avatarPreview);
+        }
+        setAvatarPreview(null);
+        if (avatarInputRef.current) {
+            avatarInputRef.current.value = '';
+        }
+    };
+
 
     const handleTabChange = (loginState: boolean) => {
         setIsLogin(loginState);
         setError(null);
         setMessage(null);
-        // Don't clear email so user doesn't have to re-type if they mis-click
-        // setPassword(''); 
+        // Clear registration-specific fields when switching tabs
+        setDisplayName('');
+        setAvatarFile(null);
+        setAvatarPreview(null);
     };
 
     const handleAuthAction = async (e: React.FormEvent) => {
@@ -87,26 +136,53 @@ export const AuthManager: React.FC = () => {
                 setIsLoading(false);
                 return;
             }
+             if (!displayName.trim()) {
+                setError("Vui lòng nhập tên hiển thị.");
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Send verification email
+                // 1. Upload avatar if it exists
+                let photoURL: string | null = null;
+                if (avatarFile) {
+                    const avatarRef = ref(storage, `avatars/${user.uid}`);
+                    await uploadBytes(avatarRef, avatarFile);
+                    photoURL = await getDownloadURL(avatarRef);
+                }
+
+                // 2. Update Firebase Auth profile
+                await updateProfile(user, {
+                    displayName: displayName,
+                    photoURL: photoURL
+                });
+
+                // 3. Send verification email
                 await sendEmailVerification(user);
 
-                // Create user profile in Firestore
+                // 4. Create user profile in Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: user.email,
+                    displayName: displayName,
+                    photoURL: photoURL,
                     role: 'user',
                     status: 'pending',
                     createdAt: serverTimestamp()
                 });
 
                 setMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
-                setIsLogin(true); // Switch to login view after registration
+                // Reset form and switch to login
+                setIsLogin(true); 
                 setEmail('');
                 setPassword('');
+                setDisplayName('');
+                setAvatarFile(null);
+                setAvatarPreview(null);
+
             } catch (err: any) {
                 console.error("Registration error:", err);
                 if (err.code === 'auth/email-already-in-use') {
@@ -201,6 +277,59 @@ export const AuthManager: React.FC = () => {
                                 {message}
                             </div>
                         )}
+
+                        {!isLogin && (
+                             <>
+                                <div>
+                                    <label htmlFor="avatar-upload" className="block text-sm font-medium text-slate-300 mb-2">Ảnh đại diện (Tùy chọn)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <div className="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => avatarInputRef.current?.click()}>
+                                                {avatarPreview ? (
+                                                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover rounded-full"/>
+                                                ) : (
+                                                    <UploadIcon className="text-slate-500" />
+                                                )}
+                                            </div>
+                                             <input
+                                                id="avatar-upload"
+                                                type="file"
+                                                ref={avatarInputRef}
+                                                onChange={handleAvatarChange}
+                                                className="hidden"
+                                                accept="image/png, image/jpeg, image/webp"
+                                            />
+                                        </div>
+                                        <div>
+                                            <button type="button" onClick={() => avatarInputRef.current?.click()} className="px-4 py-2 text-sm font-semibold bg-slate-700/80 hover:bg-slate-600 text-white rounded-lg transition-colors shadow-md">
+                                                Chọn ảnh
+                                            </button>
+                                            {avatarFile && (
+                                                <button type="button" onClick={handleRemoveAvatar} className="ml-2 text-xs text-slate-400 hover:text-red-400 transition-colors">
+                                                    Xóa ảnh
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="displayName-input" className="block text-sm font-medium text-slate-300 mb-2">
+                                        Tên hiển thị
+                                    </label>
+                                    <input
+                                        id="displayName-input"
+                                        type="text"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                        placeholder="Tên của bạn"
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                             </>
+                        )}
+
 
                         <div>
                             <label htmlFor="email-input" className="block text-sm font-medium text-slate-300 mb-2">
