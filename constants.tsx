@@ -39,6 +39,10 @@ const CityIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) =
 const ProductIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.81.97H5.44l.8-.97zM5 19V8h14v11H5z"/></svg>
 );
+const TrendingIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>
+);
+
 export const CustomPromptIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83zM3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
 );
@@ -106,6 +110,7 @@ export const GlassesIcon: React.FC<{ className?: string }> = ({ className = 'w-6
 );
 
 export const STYLE_TABS: StyleTab[] = [
+    { id: 'trends', name: 'Theo Trend' },
     { id: 'style', name: 'Phong Cách' },
     { id: 'wedding', name: 'Ảnh Cưới' },
     { id: 'product', name: 'Sản Phẩm' },
@@ -120,46 +125,46 @@ const WEDDING_STYLES: Style[] = [
         name: 'Studio Lãng mạn', 
         icon: WeddingRingIcon, 
         category: 'wedding', 
-        prompt: "trong một studio ảnh cưới cao cấp, lãng mạn. Bối cảnh là một phông nền tối giản, thanh lịch với các tông màu trung tính hoặc pastel. Ánh sáng được dàn dựng chuyên nghiệp, sử dụng ánh sáng softbox mềm mại để tôn lên vẻ đẹp tự nhiên và tạo không khí ấm cúng, thân mật. Bố cục ảnh tập trung vào sự kết nối tình cảm và biểu cảm hạnh phúc của cặp đôi." 
+        prompt: "Với tư cách là một nhiếp ảnh gia cưới cao cấp của tạp chí Junebug Weddings, hãy tạo ra một bức ảnh cưới 4K siêu thực, tinh tế và lãng mạn. **Chủ thể**: Cặp đôi từ ảnh tải lên, thể hiện sự kết nối tình cảm, ánh mắt trìu mến. **Bối cảnh**: Một studio tối giản, sang trọng với phông nền canvas màu xám nhạt hoặc tường trắng tinh. Có thể có một vài chi tiết trang trí nhẹ nhàng như một bình hoa baby trắng. **Ánh sáng**: Sử dụng kỹ thuật ánh sáng Rembrandt với một softbox lớn làm nguồn sáng chính để tạo khối mềm mại trên khuôn mặt và một đèn phụ nhẹ để làm dịu bóng tối. **Máy ảnh & Ống kính**: Chụp bằng máy ảnh medium format Hasselblad với ống kính 80mm f/1.9 để có độ chi tiết đáng kinh ngạc và hiệu ứng bokeh mịn như kem. **Hậu kỳ**: Chỉnh màu theo phong cách fine-art, tông màu ấm, da được retouch một cách tự nhiên, giữ lại kết cấu. **QUAN TRỌNG NHẤT**: Giữ nguyên vẹn và chính xác các đặc điểm khuôn mặt của cặp đôi từ ảnh gốc." 
     },
     { 
         id: 'wedding_outdoor', 
         name: 'Ngoại cảnh Thiên nhiên', 
         icon: NatureIcon, 
         category: 'wedding', 
-        prompt: "giữa một khung cảnh thiên nhiên hùng vĩ hoặc thơ mộng, chẳng hạn như trên một bãi biển lúc hoàng hôn, trong một khu rừng xanh mát, hoặc trên một ngọn đồi lộng gió. Ánh sáng tự nhiên được tận dụng tối đa để tạo ra những bức ảnh trong trẻo, sống động. Trang phục của cặp đôi hài hòa với thiên nhiên, có thể là váy cưới thướt tha và bộ suit màu sáng." 
+        prompt: "Với tư cách là một nhiếp ảnh gia chuyên chụp ảnh cưới ngoại cảnh cho Style Me Pretty, hãy tạo ra một bức ảnh cưới 4K đẹp như tranh vẽ. **Chủ thể**: Cặp đôi từ ảnh tải lên, trong trang phục cưới thanh lịch, đang đi dạo hoặc tương tác tự nhiên. **Bối cảnh**: Một khung cảnh thiên nhiên thơ mộng vào 'giờ vàng' (golden hour) - có thể là một cánh đồng hoa oải hương, một bãi biển vắng với cát trắng và sóng nhẹ, hoặc một khu rừng thông với những tia nắng xuyên qua tán lá. **Ánh sáng**: Tận dụng tối đa ánh sáng tự nhiên của hoàng hôn để tạo viền sáng vàng óng quanh cặp đôi (rim light). **Máy ảnh & Ống kính**: Chụp bằng máy ảnh Canon EOS R5 với ống kính 50mm f/1.2L để bắt trọn không khí và tạo ra hậu cảnh mờ ảo mộng mơ. **Hậu kỳ**: Chỉnh màu trong trẻo, tươi sáng, tăng cường các tông màu ấm của hoàng hôn. **QUAN TRỌNG NHẤT**: Giữ nguyên vẹn và chính xác các đặc điểm khuôn mặt của cặp đôi từ ảnh gốc." 
     },
     { 
         id: 'wedding_classic', 
         name: 'Cổ điển & Hoài niệm', 
         icon: CameraIcon, 
         category: 'wedding', 
-        prompt: "theo phong cách cổ điển, vượt thời gian. Bối cảnh có thể là một tòa nhà kiến trúc cổ, một thư viện sang trọng, hoặc một khu vườn kiểu châu Âu. Tông màu ảnh có thể là đen trắng hoặc màu film vintage, mang lại cảm giác hoài niệm và sang trọng. Trang phục của cặp đôi mang hơi hướng cổ điển, lịch lãm."
+        prompt: "Với tư cách là một bậc thầy nhiếp ảnh cưới theo phong cách film cổ điển, hãy tạo ra một bức ảnh cưới 4K mang vẻ đẹp vượt thời gian. **Chủ thể**: Cặp đôi từ ảnh tải lên, tạo dáng trang trọng, cổ điển. **Bối cảnh**: Bên trong một công trình kiến trúc cổ kính như một thư viện cũ với kệ sách cao, một tòa lâu đài châu Âu, hoặc trên cầu thang lớn bằng đá cẩm thạch. **Ánh sáng**: Ánh sáng dịu nhẹ từ cửa sổ lớn, tạo ra sự chuyển tiếp mượt mà giữa vùng sáng và vùng tối, gợi cảm giác sâu lắng. **Máy ảnh & Ống kính**: Mô phỏng ảnh chụp từ máy film Contax 645 với ống kính Zeiss 80mm f/2. **Hậu kỳ**: Chuyển thành ảnh đen trắng có độ tương phản cao, hoặc chỉnh màu film cổ điển (như Kodak Portra 400) với tông màu hơi ngả xanh ở vùng tối và thêm một lớp grain film tinh tế. **QUAN TRỌNG NHẤT**: Giữ nguyên vẹn và chính xác các đặc điểm khuôn mặt của cặp đôi từ ảnh gốc."
     },
     { 
         id: 'wedding_modern', 
         name: 'Thành thị & Hiện đại', 
         icon: CityIcon, 
         category: 'wedding', 
-        prompt: "trong bối cảnh thành phố hiện đại và năng động. Cặp đôi có thể đứng trên sân thượng của một tòa nhà chọc trời với view toàn cảnh thành phố về đêm, hoặc đi dạo trên một con phố sầm uất. Phong cách ảnh táo bạo, thời trang và đầy cá tính, thể hiện sự năng động của tình yêu đô thị."
+        prompt: "Với tư cách là một nhiếp ảnh gia cưới thời trang và táo bạo, hãy tạo ra một bức ảnh cưới 4K độc đáo và hiện đại. **Chủ thể**: Cặp đôi từ ảnh tải lên, mặc trang phục cưới phá cách, thần thái tự tin. **Bối cảnh**: Bối cảnh thành phố về đêm, trên sân thượng một tòa nhà chọc trời với view triệu đô, hoặc giữa một con phố đông đúc với hiệu ứng vệt đèn (light trails) từ xe cộ. **Ánh sáng**: Sử dụng ánh sáng nhân tạo một cách sáng tạo, có thể là đèn flash trực tiếp (direct flash) để tạo phong cách edgy hoặc ánh sáng từ các bảng hiệu neon. **Máy ảnh & Ống kính**: Chụp bằng ống kính góc rộng 24-70mm f/2.8 để bắt trọn sự hùng vĩ của thành phố. **Hậu kỳ**: Chỉnh màu theo tông lạnh, kiểu cinematic, tăng độ tương phản và độ sắc nét. **QUAN TRỌG NHẤT**: Giữ nguyên vẹn và chính xác các đặc điểm khuôn mặt của cặp đôi từ ảnh gốc."
     },
 ];
 
 
 const REGULAR_STYLES: Style[] = [
-    { id: 'businessman', name: 'Doanh nhân Hiện đại', icon: UserTieIcon, category: 'style', prompt: 'một bức chân dung doanh nhân chuyên nghiệp và hiện đại. Người trong ảnh mặc một bộ vest công sở lịch lãm. Bối cảnh là một văn phòng hiện đại, sang trọng với ánh sáng studio.' },
-    { id: 'artist', name: 'Nghệ sĩ Sáng tạo', icon: PaletteIcon, category: 'style', prompt: 'một bức chân dung nghệ thuật đầy sáng tạo. Trang phục có thể phá cách và nghệ thuật. Bối cảnh là một studio nghệ thuật hoặc một không gian đầy màu sắc, với ánh sáng ấn tượng.' },
-    { id: 'classic', name: 'Cổ điển Đen trắng', icon: CameraIcon, category: 'style', prompt: 'một bức chân dung đen trắng cổ điển, vượt thời gian. Tập trung vào sự tương phản, sắc thái và kết cấu, với ánh sáng mềm mại, tinh tế.' },
-    { id: 'future', name: 'Công nghệ Tương lai', icon: RobotIcon, category: 'style', prompt: "phong cách công nghệ tương lai (cyberpunk/sci-fi), với các yếu tố như ánh sáng neon, giao diện голографічна trong một thành phố tương lai." },
-    { id: 'natural', name: 'Tự nhiên & Thân thiện', icon: LeafIcon, category: 'style', prompt: 'một bức chân dung tự nhiên trong bối cảnh ngoài trời tươi sáng như công viên, khu vườn. Ánh sáng ấm áp và tự nhiên, trang phục đơn giản, thoải mái.' },
-    { id: 'cinematic', name: 'Phong cách Điện ảnh', icon: FilmIcon, category: 'style', prompt: 'một cảnh phim điện ảnh với tỷ lệ khung hình rộng, màu sắc đậm chất điện ảnh (color grading), và ánh sáng kịch tính để tạo cảm giác có câu chuyện.' },
-    { id: 'magazine', name: 'Tạp chí Nổi tiếng', icon: StarIcon, category: 'style', prompt: 'ảnh bìa một tạp chí thời trang nổi tiếng. Trang phục thời thượng, phong cách. Ánh sáng hoàn hảo như trong studio.' },
-    { id: 'newspaper', name: 'Giang hồ Hồ báo', icon: NewspaperIcon, category: 'style', prompt: "phong cách 'giang hồ' cổ điển, giống như trong các bộ phim xã hội đen Hồng Kông, với tông màu cũ, hơi ngả vàng và ánh sáng kịch tính." },
+    { id: 'businessman', name: 'Doanh nhân Hiện đại', icon: UserTieIcon, category: 'style', prompt: "Với tư cách là nhiếp ảnh gia hàng đầu của tạp chí Forbes, hãy tạo một bức chân dung 8K siêu thực, mạnh mẽ của chủ thể trong vai trò một nhà lãnh đạo doanh nghiệp hiện đại. **Chủ thể**: Người trong ảnh, mặc một bộ suit được may đo hoàn hảo màu xanh navy hoặc xám than, biểu cảm tự tin nhưng gần gũi. **Bối cảnh**: Một văn phòng tối giản trên cao, nhìn ra cửa sổ lớn với khung cảnh thành phố mờ ảo (bokeh). **Ánh sáng**: Sử dụng kỹ thuật chiếu sáng 3 điểm chuyên nghiệp: đèn chính (key light) mềm mại để tạo khối, đèn phụ (fill light) nhẹ để giảm bóng, và đèn viền (rim light) tinh tế để tách chủ thể khỏi nền. **Máy ảnh & Ống kính**: Chụp bằng ống kính chân dung 85mm f/1.4 để tạo độ sâu trường ảnh nông, làm nổi bật chủ thể. **Hậu kỳ**: Chỉnh màu điện ảnh (cinematic color grading), chi tiết sắc nét, tông da hoàn hảo. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể. TRÁNH vẻ ngoài giả tạo của ảnh stock." },
+    { id: 'artist', name: 'Nghệ sĩ Sáng tạo', icon: PaletteIcon, category: 'style', prompt: "Với tư cách là một nhiếp ảnh gia nghệ thuật chuyên chụp chân dung cho các nghệ sĩ, hãy tạo một bức ảnh 8K đầy cảm xúc và kịch tính. **Chủ thể**: Người trong ảnh, trang phục thể hiện cá tính riêng, có thể dính vài vệt sơn. **Bối cảnh**: Một studio nghệ thuật lộn xộn có chủ đích, với giá vẽ, toan, và các vệt sơn xung quanh. **Ánh sáng**: Sử dụng kỹ thuật chiếu sáng Rembrandt, tạo ra một tam giác sáng đặc trưng dưới mắt, mang lại chiều sâu và tâm trạng. **Máy ảnh & Ống kính**: Chụp bằng ống kính 50mm f/1.8 để có góc nhìn tự nhiên. **Hậu kỳ**: Tăng cường độ tương phản và kết cấu (texture), màu sắc có thể bão hòa hoặc giảm nhẹ để tạo không khí. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'classic', name: 'Cổ điển Đen trắng', icon: CameraIcon, category: 'style', prompt: "Với tư cách là một bậc thầy nhiếp ảnh đen trắng theo phong cách của Ansel Adams, hãy tạo một bức chân dung 8K đen trắng vượt thời gian. **Chủ thể**: Người trong ảnh. **Bối cảnh**: Phông nền đơn giản, tập trung hoàn toàn vào chủ thể. **Ánh sáng**: Ánh sáng mềm mại, khuếch tán từ một phía để điêu khắc các đường nét trên khuôn mặt. **Máy ảnh & Ống kính**: Mô phỏng máy ảnh Leica M với ống kính 35mm Summicron. **Hậu kỳ**: Độ tương phản cao, dải tông màu (tonal range) rộng từ đen sâu đến trắng sáng. Thêm một lớp nhiễu hạt (film grain) tinh tế để tăng cảm giác chân thực. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'future', name: 'Công nghệ Tương lai', icon: RobotIcon, category: 'style', prompt: "Với tư cách là đạo diễn hình ảnh của bộ phim Blade Runner, hãy tạo một bức ảnh 8K theo phong cách cyberpunk. **Chủ thể**: Người trong ảnh, có thể có các chi tiết công nghệ cao trên trang phục. **Bối cảnh**: Một con phố đêm ở thành phố tương lai, với các bảng hiệu neon rực rỡ, trời mưa nhẹ và các hình ảnh hologram. **Ánh sáng**: Ánh sáng neon phản chiếu trên da và quần áo, tạo ra các mảng màu xanh dương, hồng và tím. **Máy ảnh & Ống kính**: Sử dụng ống kính anamorphic để tạo hiệu ứng bokeh hình oval và lóa sáng (lens flare) đặc trưng. **Hậu kỳ**: Chỉnh màu với tông xanh và tím làm chủ đạo, độ tương phản cao và vùng tối sâu. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'natural', name: 'Tự nhiên & Thân thiện', icon: LeafIcon, category: 'style', prompt: "Với tư cách là nhiếp ảnh gia phong cách sống, hãy tạo một bức chân dung 8K tự nhiên và ấm áp. **Chủ thể**: Người trong ảnh, mặc trang phục đơn giản, thoải mái, tươi cười. **Bối cảnh**: Một công viên xanh mát hoặc khu vườn vào 'giờ vàng' (golden hour) cuối buổi chiều. **Ánh sáng**: Ánh sáng mặt trời tự nhiên, ấm áp, chiếu xiên. **Máy ảnh & Ống kính**: Chụp bằng ống kính 50mm f/1.8 để có góc nhìn tự nhiên và xóa phông nhẹ nhàng. **Hậu kỳ**: Chỉnh màu ấm áp, tươi sáng, giữ lại vẻ đẹp tự nhiên. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'cinematic', name: 'Phong cách Điện ảnh', icon: FilmIcon, category: 'style', prompt: "Với tư cách là đạo diễn hình ảnh (Cinematographer), hãy tạo một khung hình phim điện ảnh 8K. **Chủ thể**: Người trong ảnh, biểu cảm có chiều sâu, như đang ở giữa một câu chuyện. **Bối cảnh**: Một bối cảnh có tính kể chuyện, ví dụ như một quán cà phê vắng, một sân ga cũ. **Ánh sáng**: Ánh sáng kịch tính, có thể là ánh sáng le lói qua cửa sổ hoặc ánh đèn đường. **Máy ảnh & Ống kính**: Tỷ lệ khung hình siêu rộng (2.35:1). **Hậu kỳ**: Chỉnh màu theo phong cách Hollywood (ví dụ: tông màu cam và xanh mòng két - teal and orange), tạo viền đen trên dưới. **Yêu cầu cốt lõl**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'magazine', name: 'Tạp chí Nổi tiếng', icon: StarIcon, category: 'style', prompt: "Với tư cách là nhiếp ảnh gia thời trang của tạp chí Vogue, hãy tạo một bức ảnh bìa 8K đầy phong cách. **Chủ thể**: Người trong ảnh, trang phục thời thượng, thần thái đỉnh cao. **Bối cảnh**: Phông nền studio màu sắc hoặc một địa điểm kiến trúc độc đáo. **Ánh sáng**: Ánh sáng studio hoàn hảo, có thể sử dụng 'beauty dish' để làm nổi bật làn da và xương gò má. **Máy ảnh & Ống kính**: Chụp bằng ống kính 105mm f/1.4 để nén hậu cảnh và tập trung vào chủ thể. **Hậu kỳ**: Retouch da chuyên nghiệp, màu sắc rực rỡ, sống động. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
+    { id: 'newspaper', name: 'Giang hồ Cũ', icon: NewspaperIcon, category: 'style', prompt: "Với tư cách là đạo diễn phim xã hội đen Hồng Kông thập niên 90, hãy tạo một bức ảnh 8K đậm chất 'giang hồ'. **Chủ thể**: Người trong ảnh, trang phục kiểu retro (sơ mi hoa, áo khoác da). **Bối cảnh**: Một con hẻm nhỏ ở Hồng Kông về đêm, hoặc một quán mạt chược. **Ánh sáng**: Ánh sáng kịch tính từ các nguồn sáng đơn lẻ, tạo bóng đổ mạnh. **Máy ảnh & Ống kính**: Mô phỏng máy quay phim cũ. **Hậu kỳ**: Chỉnh màu theo tông phim cũ, ngả vàng hoặc xanh, thêm hiệu ứng nhiễu hạt và có thể có vệt sáng mờ. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
 ];
 
 const generateProductStyles = (basePrompt: string, items: string[]): Style[] => {
     return items.map(item => {
-        const id = `product_${basePrompt}_${item.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const id = `product_${basePrompt.substring(0,15)}_${item.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
         const prompt = basePrompt.replace('{item}', item);
         return {
             id,
@@ -176,7 +181,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
         id: 'product_model',
         name: 'Với Người Mẫu',
         icon: UserTieIcon,
-        styles: generateProductStyles('được trình bày bởi {item}', [
+        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia quảng cáo sản phẩm cao cấp, hãy tạo một hình ảnh 4K siêu thực, chuyên nghiệp. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Tương tác**: Sản phẩm được trình bày một cách tự nhiên bởi **{item}**. **Bối cảnh & Ánh sáng**: Sử dụng ánh sáng studio mềm mại (softbox) để làm nổi bật chi tiết sản phẩm và người mẫu trên một phông nền sạch sẽ, phù hợp. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính macro 100mm f/5.6 để sản phẩm siêu nét. Hậu kỳ với màu sắc chuẩn xác, retouch da chuyên nghiệp. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Người mẫu phải tôn vinh sản phẩm, không làm lu mờ nó.", [
             'Người mẫu nữ châu Á tóc dài', 'Người mẫu nam châu Âu lịch lãm', 'Người mẫu phi giới tính cá tính', 'Người mẫu fitness trong phòng gym', 'Doanh nhân thành đạt tại văn phòng',
             'Gia đình đang sử dụng sản phẩm', 'Nhóm bạn trẻ trong buổi dã ngoại', 'Người mẫu beauty với làn da hoàn hảo', 'Cận cảnh bàn tay người mẫu', 'Người mẫu trong trang phục dạ hội',
             'Người mẫu nam mặc suit', 'Người mẫu nữ mặc váy trắng', 'Người mẫu tương tác với sản phẩm', 'Người mẫu cười rạng rỡ', 'Người mẫu nhìn thẳng vào ống kính',
@@ -193,7 +198,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
         id: 'product_pharmacy',
         name: 'Tại Nhà Thuốc',
         icon: ProductIcon,
-        styles: generateProductStyles('trưng bày trên kệ tại nhà thuốc {item}', [
+        styles: generateProductStyles("Với tư cách là một chuyên gia marketing ngành dược, hãy tạo một hình ảnh 4K siêu thực, đáng tin cậy. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được trưng bày một cách nổi bật trên kệ của một **{item}**. Không gian sạch sẽ, sáng sủa và được sắp xếp gọn gàng. **Ánh sáng**: Ánh sáng trắng, đều, mô phỏng ánh sáng đèn LED trong các nhà thuốc hiện đại. **Máy ảnh & Hậu kỳ**: Chụp với độ sâu trường ảnh nông (shallow depth-of-field) để sản phẩm sắc nét trong khi các sản phẩm khác ở hậu cảnh hơi mờ đi. Màu sắc trung thực, rõ ràng. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Hình ảnh phải tạo cảm giác uy tín và chuyên nghiệp.", [
             'FPT Long Châu sáng sủa', 'Pharmacity hiện đại', 'An Khang ngăn nắp', 'Guardian (khu vực VN)', 'Watsons (khu vực VN)', 'Medicare (khu vực VN)',
             'Phano Pharmacy uy tín', 'Trung Sơn Pharma', 'Nhà thuốc ECO Pharmacy', 'Nhà thuốc Glee Pharmacy', 'Vistar Pharmacy',
             'Một nhà thuốc lớn ở Hà Nội', 'Một nhà thuốc ở TP.HCM', 'Quầy thuốc bệnh viện', 'Nhà thuốc theo chuẩn GPP', 'Nhà thuốc truyền thống',
@@ -210,7 +215,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
         id: 'product_luxury',
         name: 'Bối Cảnh Sang Trọng',
         icon: StarIcon,
-        styles: generateProductStyles('đặt trong bối cảnh {item}', [
+        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia tĩnh vật cho các thương hiệu xa xỉ, hãy tạo một hình ảnh 4K siêu thực, tinh xảo. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được đặt trong bối cảnh **{item}**. Bố cục tối giản, sang trọng, tập trung vào sản phẩm. **Ánh sáng**: Sử dụng ánh sáng studio có độ tương phản nhẹ, tạo bóng đổ mềm mại để làm nổi bật kết cấu và hình khối của sản phẩm. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính macro để lột tả từng chi tiết nhỏ nhất. Hậu kỳ với màu sắc sâu, tinh tế và độ nét hoàn hảo. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Toát lên vẻ đẳng cấp và độc quyền.", [
             'Mặt đá cẩm thạch đen vân vàng', 'Nền lụa trắng mềm mại', 'Bệ trưng bày bằng kính', 'Bên cạnh chai rượu whisky', 'Trong hộp quà cao cấp',
             'Trên bàn trang điểm lộng lẫy', 'Trong phòng tắm khách sạn 5 sao', 'Trên đàn piano màu đen bóng', 'Bên cạnh một chiếc đồng hồ Thụy Sĩ', 'Trên một cuốn sách bìa da',
             'Flatlay với các phụ kiện vàng', 'Trên nền vải nhung đỏ', 'Trong một nội thất tối giản', 'Phản chiếu trên mặt nước tĩnh', 'Giữa những viên kim cương',
@@ -227,7 +232,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
         id: 'product_nature',
         name: 'Hòa mình Thiên Nhiên',
         icon: LeafIcon,
-        styles: generateProductStyles('đặt trên {item}', [
+        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia sản phẩm chuyên về chủ đề tự nhiên, hãy tạo một hình ảnh 4K siêu thực, hài hòa. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được đặt một cách tự nhiên trên **{item}**. Bố cục nhấn mạnh sự kết nối giữa sản phẩm và thiên nhiên. **Ánh sáng**: Sử dụng ánh sáng tự nhiên, mềm mại, có thể là ánh nắng buổi sáng sớm hoặc chiều tà. **Máy ảnh & Hậu kỳ**: Chụp với khẩu độ mở lớn (ví dụ f/2.8) để tạo ra hậu cảnh mờ đẹp mắt. Màu sắc được chỉnh sửa theo tông màu đất, tự nhiên, trong trẻo. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Hình ảnh phải truyền tải được sự tinh khiết và thân thiện với môi trường.", [
             'Tảng đá phủ rêu trong rừng', 'Bãi cát trắng mịn của bãi biển', 'Một chiếc lá nhiệt đới lớn', 'Nền gỗ mộc mạc', 'Bề mặt băng giá',
             'Đám sỏi cuội ở bờ suối', 'Một gốc cây cổ thụ', 'Cánh đồng hoa oải hương', 'Nền là những con sóng biển', 'Một vách đá nhìn ra biển',
             'Giữa vườn thảo mộc xanh tươi', 'Trên một lớp tuyết mới rơi', 'Bên cạnh một dòng dung nham', 'Trong một hang động thạch nhũ', 'Trên một sa mạc cát',
@@ -243,6 +248,8 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
 ];
 
 const ALL_PRODUCT_STYLES: Style[] = PRODUCT_CATEGORIES.flatMap(category => category.styles);
+
+const baseCompositePrompt = "Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Ghép khuôn mặt của người trong ảnh gốc vào một bối cảnh mới của **{item}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên khuôn mặt của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
 
 const CELEBRITY_SUGGESTIONS: string[] = [
     // Vietnamese
@@ -304,7 +311,7 @@ const CELEBRITY_STYLES: Style[] = CELEBRITY_SUGGESTIONS.map(name => ({
     name: name,
     icon: StarIcon, 
     category: 'celebrity',
-    prompt: `Ghép mặt của người trong ảnh gốc vào một bức ảnh của ${name}.`
+    prompt: baseCompositePrompt.replace('{item}', name)
 }));
 
 const TRAVEL_STYLES: Style[] = TRAVEL_SUGGESTIONS.map(name => ({
@@ -312,7 +319,7 @@ const TRAVEL_STYLES: Style[] = TRAVEL_SUGGESTIONS.map(name => ({
     name: name,
     icon: StarIcon, 
     category: 'travel',
-    prompt: `Đưa người trong ảnh gốc đến ${name}.`
+    prompt: baseCompositePrompt.replace('{item}', `một bức ảnh chụp tại ${name}`)
 }));
 
 const PANORAMA_STYLES: Style[] = PANORAMA_SUGGESTIONS.map(name => ({
@@ -320,10 +327,87 @@ const PANORAMA_STYLES: Style[] = PANORAMA_SUGGESTIONS.map(name => ({
     name: name,
     icon: StarIcon,
     category: 'panorama',
-    prompt: `Đặt người trong ảnh gốc vào bối cảnh toàn cảnh ${name}.`
+    prompt: baseCompositePrompt.replace('{item}', `một bối cảnh toàn cảnh của ${name}`)
 }));
 
+const TRENDING_STYLES: Style[] = [
+     {
+        id: 'trend_back_to_school_2024',
+        name: 'Tựu Trường 2024',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là nhiếp ảnh gia cho một bộ phim thanh xuân vườn trường, hãy tạo một bức ảnh tựu trường 4K trong trẻo và đầy hoài niệm. **Chủ thể**: Người trong ảnh, mặc đồng phục học sinh hoặc trang phục năng động, trẻ trung, có thể đeo balo. **Bối cảnh**: Sân trường ngập nắng với cây phượng, hành lang lớp học, hoặc thư viện. **Ánh sáng**: Ánh sáng tự nhiên, trong trẻo của buổi sáng. **Máy ảnh & Hậu kỳ**: Chỉnh màu theo phong cách film Nhật Bản, tông màu nhẹ nhàng, tươi sáng, có chút hoài niệm. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-08-15',
+        endDate: '2024-09-05',
+    },
+    {
+        id: 'trend_mid_autumn_2024',
+        name: 'Trung Thu 2024',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là một nghệ sĩ kể chuyện bằng hình ảnh, hãy tạo một bức ảnh Tết Trung Thu 4K huyền ảo, đầy thơ mộng. **Chủ thể**: Người trong ảnh, có thể mặc trang phục cổ trang hoặc hiện đại, tay cầm một chiếc đèn lồng truyền thống (đèn ông sao, đèn cá chép). **Bối cảnh**: Đứng dưới ánh trăng tròn vành vạnh của đêm rằm tháng Tám. Xung quanh là phố phường được trang trí đèn lồng nhiều màu sắc. **Ánh sáng**: Ánh sáng chính phát ra từ mặt trăng và chiếc đèn lồng chủ thể cầm, tạo ra một không gian lung linh, huyền ảo. **Máy ảnh & Hậu kỳ**: Chụp ở khẩu độ lớn để thu nhiều ánh sáng và tạo hiệu ứng bokeh từ những chiếc đèn lồng ở hậu cảnh. Màu sắc nên có độ bão hòa cao, đặc biệt là màu đỏ và vàng, để thể hiện không khí lễ hội. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-09-10',
+        endDate: '2024-09-25',
+    },
+    {
+        id: 'trend_halloween_2024',
+        name: 'Halloween 2024',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là một đạo diễn phim kinh dị, hãy tạo một bức ảnh Halloween 4K ma mị và ấn tượng. **Chủ thể**: Người trong ảnh, hóa trang thành một nhân vật kinh dị (ma cà rồng, zombie, phù thủy...) với biểu cảm bí ẩn. **Bối cảnh**: Một khu rừng đầy sương mù vào ban đêm, một ngôi nhà hoang, hoặc một nghĩa địa cũ. Ánh trăng mờ ảo chiếu qua cành cây. **Ánh sáng**: Sử dụng kỹ thuật chiếu sáng từ dưới lên (uplighting) để tạo hiệu ứng rùng rợn. Có thể có ánh sáng lập lòe từ một quả bí ngô khoét rỗng (Jack-o'-lantern). **Máy ảnh & Hậu kỳ**: Chỉnh màu theo tông lạnh, xanh lá cây hoặc xanh dương, tăng độ tương phản để làm nổi bật bóng tối. Thêm hiệu ứng sương mù. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-10-20',
+        endDate: '2024-11-02',
+    },
+    {
+        id: 'trend_black_friday_2024',
+        name: 'Black Friday 2024',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là một giám đốc sáng tạo cho chiến dịch quảng cáo Black Friday, hãy tạo một hình ảnh 4K đầy năng lượng và phong cách. **Chủ thể**: Người trong ảnh, mặc trang phục thời trang, sành điệu, đang cầm những chiếc túi mua sắm hàng hiệu. **Bối cảnh**: Một con phố mua sắm sang trọng với các cửa hàng được trang trí lộng lẫy, hoặc một studio với phông nền đen và các chữ 'SALE', 'BLACK FRIDAY' bằng neon. **Ánh sáng**: Ánh sáng mạnh, tương phản cao, làm nổi bật sự phấn khích và tốc độ. **Máy ảnh & Hậu kỳ**: Chỉnh màu sắc nét, rực rỡ. Có thể thêm hiệu ứng chuyển động mờ (motion blur) để tạo cảm giác năng động. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-11-25',
+        endDate: '2024-12-02',
+    },
+    {
+        id: 'trend_christmas_2024',
+        name: 'Giáng Sinh 2024',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là nhiếp ảnh gia của tạp chí Hallmark, hãy tạo một bức ảnh Giáng Sinh 4K ấm cúng, huyền ảo. **Chủ thể**: Người trong ảnh, mặc đồ len ấm áp (áo len, mũ len) màu đỏ hoặc xanh lá. **Bối cảnh**: Bên cạnh một cây thông Noel được trang trí lộng lẫy, có lò sưởi đang cháy và những hộp quà xung quanh. Ngoài cửa sổ tuyết đang rơi nhẹ. **Ánh sáng**: Ánh sáng ấm từ lò sưởi và đèn trang trí trên cây thông, tạo ra hiệu ứng bokeh lấp lánh. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính 85mm f/1.8 để tập trung vào chủ thể và tạo bokeh đẹp. Chỉnh màu ấm áp, tăng cường màu đỏ và xanh, tạo cảm giác ấm cúng, thân mật. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-12-01',
+        endDate: '2024-12-31',
+    },
+    {
+        id: 'trend_new_year_2025',
+        name: 'Năm Mới 2025',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là một nhiếp ảnh gia sự kiện quốc tế, hãy bắt trọn khoảnh khắc giao thừa 4K đầy hy vọng và lấp lánh. **Chủ thể**: Người trong ảnh, mặc trang phục dạ hội lộng lẫy, nâng ly chúc mừng. **Bối cảnh**: Đứng trên ban công nhìn ra cảnh pháo hoa rực rỡ trên bầu trời đêm của một thành phố lớn (như Sydney, New York, London). **Ánh sáng**: Ánh sáng đa sắc từ pháo hoa phản chiếu lên chủ thể, tạo nên một khung cảnh huyền ảo. **Máy ảnh & Hậu kỳ**: Sử dụng tốc độ màn trập chậm để bắt được vệt pháo hoa. Màu sắc sống động, độ tương phản cao. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2024-12-28',
+        endDate: '2025-01-05',
+    },
+    {
+        id: 'trend_tet_2025',
+        name: 'Ảnh Tết 2025',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là nhiếp ảnh gia chuyên về lễ hội văn hóa Việt Nam, hãy tạo một bức ảnh 4K rực rỡ, siêu chi tiết về chủ thể đang đón Tết Nguyên Đán 2025. **Chủ thể**: Người trong ảnh, mặc Áo Dài truyền thống thanh lịch (ưu tiên màu đỏ hoặc vàng để may mắn), biểu cảm vui tươi, hân hoan. **Bối cảnh**: Một khung cảnh đậm chất Tết Việt Nam, ví dụ như trước một ngôi chùa cổ được trang trí Tết, hoặc trong nhà có cây quất, cành đào, bánh chưng. Hậu cảnh có đèn lồng đỏ và câu đối. **Ánh sáng**: Ánh sáng ấm áp của 'giờ vàng', tôn lên không khí lễ hội và hạnh phúc. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính 50mm f/1.8 cho góc nhìn tự nhiên, hậu cảnh xóa phông nhẹ. Ảnh phải rực rỡ, sống động, với tông màu đỏ và vàng chủ đạo. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể. Đảm bảo tính chân thực văn hóa.",
+        startDate: '2025-01-20',
+        endDate: '2025-02-10',
+    },
+    {
+        id: 'trend_valentine_2025',
+        name: 'Valentine 2025',
+        icon: TrendingIcon,
+        category: 'trends',
+        prompt: "Với tư cách là một nhiếp ảnh gia chuyên chụp ảnh cặp đôi lãng mạn, hãy tạo một bức ảnh Valentine 4K ngọt ngào và tình cảm. **Chủ thể**: Người trong ảnh (nếu là ảnh đơn thì tạo biểu cảm mơ mộng), tay cầm một bông hồng đỏ hoặc một hộp sô cô la. **Bối cảnh**: Một quán cà phê kiểu Pháp lãng mạn, một khu vườn đầy hoa hồng, hoặc một con phố với ánh đèn vàng ấm áp. **Ánh sáng**: Ánh sáng mềm mại, ấm áp, tạo không khí thân mật. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính chân dung 85mm f/1.4 để có hiệu ứng bokeh mịn màng. Chỉnh màu theo tông hồng và đỏ, tạo cảm giác ngọt ngào. **Yêu cầu cốt lõi**: Giữ nguyên đặc điểm khuôn mặt của chủ thể.",
+        startDate: '2025-02-07',
+        endDate: '2025-02-16',
+    },
+];
+
+
 export const STYLES: Style[] = [
+    ...TRENDING_STYLES,
     ...REGULAR_STYLES, 
     ...WEDDING_STYLES,
     ...ALL_PRODUCT_STYLES,

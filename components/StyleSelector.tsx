@@ -4,6 +4,7 @@ import { STYLE_TABS, STYLES } from '../constants';
 import { WeddingStylesTab } from './WeddingStylesTab';
 import { ProductStylesTab } from './ProductStylesTab';
 import { CustomPromptTab } from './CustomPromptTab';
+import { TrendingStylesTab } from './TrendingStylesTab';
 
 interface StyleSelectorProps {
     activeTab: string;
@@ -61,6 +62,8 @@ export const StyleSelector: React.FC<StyleSelectorProps> = (props) => {
      */
     const renderTabContent = () => {
         switch (activeTab) {
+            case 'trends':
+                 return <TrendingStylesTab styles={stylesForTab} selectedStyle={selectedStyle} onStyleSelect={onStyleSelect} />;
             case 'wedding':
                 return <WeddingStylesTab styles={stylesForTab} selectedStyle={selectedStyle} onStyleSelect={onStyleSelect} />;
             case 'product':

@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -22,6 +24,7 @@ import { AuthManager } from './components/AuthManager';
 import { AdminPanel } from './components/AdminPanel';
 import { PendingApproval } from './components/PendingApproval';
 import { UserMenu } from './components/UserMenu';
+import { UsageGuide } from './components/UsageGuide';
 
 
 // Constants and Types
@@ -65,6 +68,9 @@ function App() {
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
 
+  // UI State
+  const [showGuide, setShowGuide] = useState(false);
+
 
   // State management
   const [mode, setMode] = useState<'single' | 'group'>('single');
@@ -78,8 +84,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState('style');
-  const [selectedStyle, setSelectedStyle] = useState<Style>(STYLES[0]);
+  const [activeTab, setActiveTab] = useState('trends');
+  const [selectedStyle, setSelectedStyle] = useState<Style>(STYLES.find(s => s.category === 'trends') || STYLES[0]);
   
   // Custom prompts per tab
   const [stylePrompt, setStylePrompt] = useState('');
@@ -99,6 +105,14 @@ function App() {
 
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  // Check if guide should be shown on mount
+  useEffect(() => {
+    const guideHidden = localStorage.getItem('hideUsageGuide');
+    if (guideHidden !== 'true') {
+        setShowGuide(true);
+    }
+  }, []);
 
   // Firebase Auth listener with Firestore integration
   useEffect(() => {
@@ -377,93 +391,61 @@ function App() {
     
     if (activeTab === 'product') {
         const productContext = productPrompt || selectedStyle.prompt;
-        coreContent = `Tạo một hình ảnh quảng cáo 4K chuyên nghiệp, chất lượng cao cho sản phẩm trong ảnh đã tải lên. Đặt sản phẩm vào bối cảnh sau một cách chân thực: ${productContext}. QUAN TRỌNG: Giữ nguyên hình dạng, nhãn hiệu và chi tiết của sản phẩm gốc. Ánh sáng trong ảnh phải chuyên nghiệp, tự nhiên và phù hợp với bối cảnh để tôn lên vẻ đẹp của sản phẩm.`;
+        // The detailed prompt is now built into the style itself
+        coreContent = productContext;
     } else if (activeTab === 'wedding') {
-        const baseWeddingPrompt = `Tạo một bức ảnh cưới 4K chất lượng cao, tuyệt đẹp và duy nhất có sự góp mặt của hai người từ hai bức ảnh đã tải lên. Người 1 là từ ảnh đầu tiên và người 2 là từ ảnh thứ hai. Đặt cặp đôi vào một bối cảnh liền mạch ${selectedStyle.prompt}. Họ đang mặc trang phục cưới sang trọng và phù hợp với phong cách đã chọn (chú rể mặc suit/tuxedo, cô dâu mặc váy cưới). QUAN TRỌNG NHẤT: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình đặc trưng của mỗi người từ ảnh gốc tương ứng của họ.`;
-        coreContent = baseWeddingPrompt;
+        // The detailed prompt is now built into the style itself
+        coreContent = selectedStyle.prompt;
     } else if (activeTab === 'style' && stylePrompt) {
-        coreContent = `một bức ảnh theo phong cách ${stylePrompt}.`;
+        // For custom prompts, we prepend the expert persona
+        coreContent = `Với tư cách là một đạo diễn nghệ thuật bậc thầy, hãy tạo ra một hình ảnh 4K siêu thực, chất lượng cao theo phong cách sau: ${stylePrompt}.`;
     } else if (activeTab === 'celebrity' && celebrityPrompt) {
-        let basePrompt = `Ghép mặt của người trong ảnh gốc vào một bức ảnh của ${celebrityPrompt}.`;
-        if (mode === 'group') {
-             basePrompt = `Tạo một hình ảnh duy nhất có tất cả những người từ các bức ảnh đã tải lên. ${basePrompt.replace('của người trong ảnh gốc', 'của mỗi người vào ảnh')} Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của mỗi người.`;
-        } else {
-            basePrompt += ' Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của người trong ảnh gốc.'
-        }
-        coreContent = basePrompt;
+        // Use a generic but powerful base prompt for custom celebrity inputs
+        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Ghép khuôn mặt của người trong ảnh gốc vào một bối cảnh mới của **${celebrityPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên khuôn mặt của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
     } else if (activeTab === 'travel' && travelPrompt) {
-        coreContent = `người trong ảnh gốc đang du lịch tại ${travelPrompt}.`;
+        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đưa người trong ảnh gốc đến du lịch tại **${travelPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
     } else if (activeTab === 'panorama' && panoramaPrompt) {
-        coreContent = `người trong ảnh gốc trong bối cảnh toàn cảnh của ${panoramaPrompt}.`;
+        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đặt người trong ảnh gốc vào bối cảnh toàn cảnh của **${panoramaPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
     } else {
         coreContent = selectedStyle.prompt;
     }
 
-    if (activeTab !== 'product' && mode === 'single' && isAccessoryEnabled) {
+    if (activeTab !== 'product' && activeTab !== 'wedding' && mode === 'single' && isAccessoryEnabled) {
         const accessoryDescriptions = Object.values(accessories)
-            // FIX: Cast `acc` to `Accessory` to fix type inference issue where `acc` was `unknown`.
             .filter(acc => acc && (acc as Accessory).item)
-            // FIX: Cast `acc` to `Accessory` to fix type inference issue where `acc` was `unknown`.
             .map(acc => `${(acc as Accessory).color} ${(acc as Accessory).item}`.trim())
             .join(', ');
 
         if (accessoryDescriptions) {
-            coreContent += ` Người trong ảnh mặc các phụ kiện sau: ${accessoryDescriptions}.`;
+            coreContent += ` **Phụ kiện**: Chủ thể đeo các phụ kiện sau: ${accessoryDescriptions}.`;
         }
-    } else if (activeTab !== 'wedding' && activeTab !== 'product' && !(activeTab === 'celebrity' && celebrityPrompt)) {
-        coreContent += ' Người trong ảnh mặc trang phục được AI thiết kế riêng để cực kỳ phù hợp và thời trang với bối cảnh. Hãy cân nhắc kỹ lưỡng về phong cách, địa điểm và không khí của bức ảnh để tạo ra một bộ đồ thật ấn tượng.';
     }
 
-    if (activeTab !== 'product' && selectedImageType.id === 'portrait') {
-        coreContent += " Ảnh chụp là một bức chân dung cận cảnh.";
-    } else if (activeTab !== 'product' && selectedImageType.id === 'half_body') {
-        coreContent += " Ảnh chụp nửa người, từ đầu đến eo.";
-    } else if (activeTab !== 'product') {
-        coreContent += " Ảnh chụp toàn thân, thấy rõ cả người.";
+    // Append instructions for group mode
+     if (mode === 'group' && activeTab !== 'wedding' && activeTab !== 'product') {
+        coreContent += " **Yêu cầu cho ảnh nhóm**: Tạo một hình ảnh duy nhất có tất cả những người từ các bức ảnh đã tải lên trong một bối cảnh liền mạch. Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của mỗi người từ ảnh gốc tương ứng của họ."
     }
-    
-    const enhancedPromptStyleIds = new Set(['businessman', 'natural', 'cinematic', 'magazine']);
-    
-    const shouldUseEnhancedPrompt = 
-        (activeTab === 'travel') || 
-        (activeTab === 'panorama') || 
-        (activeTab === 'style' && (enhancedPromptStyleIds.has(selectedStyle.id) || !!stylePrompt));
 
-    if (shouldUseEnhancedPrompt) {
-        const styleNameForPrompt = stylePrompt || selectedStyle.name;
-        const mood = styleNameForPrompt.includes('Doanh nhân') ? 'chuyên nghiệp, tự tin' : 
-                     styleNameForPrompt.includes('Điện ảnh') ? 'kịch tính, có chiều sâu câu chuyện' : 
-                     styleNameForPrompt.includes('Tạp chí') ? 'thanh lịch, thời trang cao cấp' : 
-                     'hài hòa, nghệ thuật';
-
-        let enhancedPrompt = `Tạo một hình ảnh 4K chất lượng cao tuyệt đẹp dựa trên mô tả sau: "${coreContent}".
-Chụp toàn cảnh, với ánh sáng cân bằng, màu sắc tự nhiên và độ sâu trường ảnh mạnh.
-Phong cách: ${styleNameForPrompt}, tông màu: ${mood}.
-Tập trung vào chủ nghĩa hiện thực và sự hài hòa nghệ thuật — kết cấu chi tiết, bố cục năng động và không khí điện ảnh.
-Sử dụng hiệu ứng ánh sáng chuyên nghiệp để tăng cường tâm trạng và chiều sâu hình ảnh.
-Tỷ lệ khung hình: 16:9, chất lượng siêu chi tiết, quang học, phân loại màu mượt mà, hoàn hảo cho kể chuyện bằng hình ảnh.
-QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của người trong ảnh gốc.`;
-
-        if (mode === 'group') {
-             coreContent = `Tạo một hình ảnh 4K chất lượng cao, tuyệt đẹp và duy nhất, có tất cả những người từ các bức ảnh đã tải lên trong một bối cảnh liền mạch. ${enhancedPrompt.replace(/người trong ảnh gốc/g, 'mỗi người từ ảnh gốc tương ứng')}`;
+    // Add image type instructions (portrait, half_body, full_body)
+    if (activeTab !== 'product') {
+        if (selectedImageType.id === 'portrait') {
+            coreContent += " **Bố cục**: Ảnh chụp là một bức chân dung cận cảnh, tập trung vào khuôn mặt và vai.";
+        } else if (selectedImageType.id === 'half_body') {
+            coreContent += " **Bố cục**: Ảnh chụp nửa người, từ đầu đến eo.";
         } else {
-            coreContent = enhancedPrompt;
+            coreContent += " **Bố cục**: Ảnh chụp toàn thân, thấy rõ cả người và trang phục.";
         }
-    } else if (mode === 'group') {
-        coreContent = `Tạo một hình ảnh duy nhất có tất cả những người từ các bức ảnh đã tải lên trong một bối cảnh liền mạch. ${coreContent.replace(/người trong ảnh gốc/g, 'những người đó')}. QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của mỗi người từ ảnh gốc tương ứng.`;
-    } else if(activeTab !== 'wedding' && activeTab !== 'product' && !(activeTab === 'celebrity' && celebrityPrompt)) {
-        coreContent = `${coreContent} Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của người trong ảnh gốc.`;
     }
-
+    
     // Add aspect ratio and custom size instructions to the prompt
     if (selectedAspectRatio === 'custom' && customWidth && customHeight) {
-        coreContent += ` Kích thước ảnh phải là ${customWidth} x ${customHeight} pixels.`;
+        coreContent += ` **Kích thước**: Kích thước ảnh phải là ${customWidth}x${customHeight} pixels.`;
     } else if (selectedAspectRatio === 'portrait') {
-        coreContent += " Ảnh phải có tỷ lệ khung hình dọc.";
+        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình dọc (ví dụ 9:16).";
     } else if (selectedAspectRatio === 'landscape') {
-        coreContent += " Ảnh phải có tỷ lệ khung hình ngang.";
+        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình ngang (ví dụ 16:9).";
     } else { // default to square
-        coreContent += " Ảnh phải có tỷ lệ khung hình vuông.";
+        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình vuông (1:1).";
     }
 
     return coreContent;
@@ -490,6 +472,7 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
 
     try {
       const prompt = constructPrompt();
+      console.log("Final Prompt:", prompt); // For debugging
       const imageParts = await Promise.all(currentSourceImages.map(file => fileToGenerativePart(file)));
       
       const contents = {
@@ -568,6 +551,11 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
           setViewerIndex(newIndex);
       }
   }, [generatedImages]);
+
+  const handleDismissGuide = useCallback(() => {
+    setShowGuide(false);
+    localStorage.setItem('hideUsageGuide', 'true');
+  }, []);
   
   const couplePreviews = useMemo(() => {
     return [
@@ -651,6 +639,8 @@ QUAN TRỌNG: Giữ nguyên các đặc điểm khuôn mặt và ngoại hình c
                 />
             </div>
         </header>
+
+        {showGuide && <UsageGuide onDismiss={handleDismissGuide} />}
         
         {activeTab !== 'wedding' && activeTab !== 'product' && (
             <div className="flex justify-center mb-8">

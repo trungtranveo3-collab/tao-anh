@@ -6,6 +6,8 @@ export interface Style {
   icon: React.ComponentType<{ className?: string }>;
   category: string;
   prompt: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
 }
 
 export interface ProductCategory {
