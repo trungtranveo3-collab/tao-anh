@@ -124,14 +124,7 @@ export const AuthManager: React.FC = () => {
             } catch (err: any) {
                 console.error("Login error:", err);
                 if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                    setError(
-                        <>
-                            <p className="font-bold">Email hoặc mật khẩu không chính xác.</p>
-                            <p className="mt-1">
-                                Vui lòng kiểm tra lại. Nếu bạn quên mật khẩu, hãy sử dụng chức năng "Quên mật khẩu?".
-                            </p>
-                        </>
-                    );
+                    setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
                 } else {
                     setError('Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
                 }
