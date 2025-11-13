@@ -519,11 +519,9 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
         },
       });
 
-      const generationPromises = Array(numberOfImages).fill(null).map(() => generateImage());
-      const responses = await Promise.all(generationPromises);
-      
       const newImages: GeneratedImage[] = [];
-      responses.forEach(response => {
+      for (let i = 0; i < numberOfImages; i++) {
+        const response = await generateImage();
         const imagePartFound = response.candidates?.[0]?.content?.parts.find(part => part.inlineData);
         if (imagePartFound?.inlineData) {
           const base64ImageBytes = imagePartFound.inlineData.data;
@@ -533,7 +531,7 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
             settings: currentSettings,
           });
         }
-      });
+      }
 
       if (newImages.length === 0) {
         setError("Không thể tạo ảnh. API không trả về hình ảnh. Vui lòng thử lại.");
@@ -796,21 +794,17 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
                  <div className="w-full">
                     {activeTab === 'wedding' ? (
                         <CoupleImageUploader
-                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
-                            description={uploaderDescription}
                             onImageChange={handleCoupleImageChange}
                             previews={[previews[0], coupleSourceImages[0] && coupleSourceImages[1] ? previews[1] : undefined]}
                         />
                     ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
                         <ImageUploader 
-                             title="Bước 2: Cung Cấp 'Nguyên Liệu'"
-                             label="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                            label="Bước 2: Cung Cấp 'Nguyên Liệu'"
                             onImagesChange={handleImagesChange} 
                             preview={previews[0]} 
                         />
                     ) : (
                         <MultiImageUploader 
-                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
                             onFilesChange={handleImagesChange}
                             previews={previews}
                             files={sourceImages}
