@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -23,6 +21,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { PendingApproval } from './components/PendingApproval';
 import { UserMenu } from './components/UserMenu';
 import { UsageGuide } from './components/UsageGuide';
+import { VeoApiKeyInfoModal } from './components/VeoApiKeyInfoModal';
 
 
 // Constants and Types
@@ -49,7 +48,7 @@ interface UserProfile {
     expiresAt?: Timestamp;
 }
 
-interface GenerationSettings {
+export interface GenerationSettings {
   activeTab: string;
   mode: 'single' | 'group';
   selectedStyle: Style;
@@ -94,6 +93,8 @@ function App() {
 
   // UI State
   const [showGuide, setShowGuide] = useState(false);
+  const [showVeoKeyInfo, setShowVeoKeyInfo] = useState(false);
+  const [videoGenerationIndex, setVideoGenerationIndex] = useState<number | null>(null);
 
   // State management
   const [mode, setMode] = useState<'single' | 'group'>('single');
@@ -101,7 +102,7 @@ function App() {
   const [coupleSourceImages, setCoupleSourceImages] = useState<(File|null)[]>([null, null]);
 
   const [previews, setPreviews] = useState<string[]>([]);
-  const [generatedImages, setGeneratedImages] = useState<Array<string | GeneratedImage>>([]);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -272,7 +273,7 @@ function App() {
           }
           setAi(null);
           sessionStorage.removeItem(SESSION_STORAGE_KEY);
-          localStorage.removeItem(LOCAL_STORAGE_KEY);
+localStorage.removeItem(LOCAL_STORAGE_KEY);
       } finally {
           setIsVerifyingKey(false);
       }
@@ -518,7 +519,7 @@ function App() {
 
     setIsLoading(true);
     setError(null);
-    setGeneratedImages(Array(numberOfImages).fill('loading'));
+    setGeneratedImages([]);
     setGeneratedVideoUrl(null); // Clear previous video
     setVideoError(null);
 
@@ -587,11 +588,17 @@ function App() {
   
   const handleGenerateVideo = useCallback(async (imageIndex: number) => {
     const sourceImageObj = generatedImages[imageIndex];
-    if (!sourceImageObj || typeof sourceImageObj === 'string') {
+    if (!sourceImageObj) {
         setVideoError("Ảnh nguồn để tạo video không tồn tại.");
         return;
     }
     const sourceImage = sourceImageObj.url;
+
+    // Check for the AI client first.
+    if (!ai) {
+        setVideoError("AI client chưa sẵn sàng. Vui lòng kiểm tra API Key.");
+        return;
+    }
 
 
     setIsVideoLoading(true);
@@ -621,8 +628,9 @@ function App() {
             setHasSelectedVeoKey(true);
         }
 
-        const videoAi = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        
+        // Use the existing, validated AI client instead of creating a new one with process.env
+        const videoAi = ai;
+
         const base64Image = sourceImage.split(',')[1];
         const videoPrompt = `Tạo một video quảng cáo ngắn (khoảng 5-7 giây) cho sản phẩm trong ảnh. Video cần có chuyển động mượt mà, chuyên nghiệp, có thể là máy quay lia chậm quanh sản phẩm, hoặc zoom vào các chi tiết nổi bật. Giữ nguyên bối cảnh và phong cách của ảnh.`;
         
@@ -647,7 +655,11 @@ function App() {
 
         const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
         if (downloadLink) {
-             const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+             const apiKeyForFetch = localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
+             if (!apiKeyForFetch) {
+                 throw new Error("API Key for fetching video not found.");
+             }
+             const response = await fetch(`${downloadLink}&key=${apiKeyForFetch}`);
              const videoBlob = await response.blob();
              const videoUrl = URL.createObjectURL(videoBlob);
              setGeneratedVideoUrl(videoUrl);
@@ -669,7 +681,26 @@ function App() {
         clearInterval(messageInterval);
         setVideoLoadingMessage('');
     }
-  }, [generatedImages]);
+  }, [generatedImages, ai]);
+
+  const handleInitiateVideoGeneration = useCallback((index: number) => {
+      setVideoGenerationIndex(index);
+      setShowVeoKeyInfo(true);
+  }, []);
+
+  const handleConfirmVeoKeySelection = useCallback(async () => {
+    setShowVeoKeyInfo(false);
+    if (videoGenerationIndex !== null) {
+      if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
+          await (window as any).aistudio.openSelectKey();
+          // Assume success after dialog opens to avoid race conditions.
+          setHasSelectedVeoKey(true); 
+      }
+      handleGenerateVideo(videoGenerationIndex);
+    }
+    setVideoGenerationIndex(null);
+  }, [videoGenerationIndex, handleGenerateVideo]);
+
 
   const createPromptChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
       return (value: string) => {
@@ -712,7 +743,7 @@ function App() {
   const openViewer = useCallback((index: number) => setViewerIndex(index), []);
   const closeViewer = useCallback(() => setViewerIndex(null), []);
   const navigateViewer = useCallback((newIndex: number) => {
-      const totalImages = generatedImages.filter(img => typeof img === 'object').length;
+      const totalImages = generatedImages.length;
       if (newIndex >= 0 && newIndex < totalImages) {
           setViewerIndex(newIndex);
       }
@@ -812,6 +843,13 @@ function App() {
         {showAdminPanel && userProfile.role === 'admin' && (
             <AdminPanel onClose={() => setShowAdminPanel(false)} currentUserProfile={userProfile} />
         )}
+        
+        {showVeoKeyInfo && (
+            <VeoApiKeyInfoModal 
+                onClose={() => setShowVeoKeyInfo(false)}
+                onConfirm={handleConfirmVeoKeySelection}
+            />
+        )}
 
         <header className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-12 pb-8 border-b border-emerald-400/20">
             {/* Title and Subtitle */}
@@ -867,7 +905,7 @@ function App() {
         )}
 
         <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 {/* Step 1: Customize */}
                 <div className="w-full">
                     <Panel className="flex flex-col space-y-8">
@@ -901,7 +939,7 @@ function App() {
                 </div>
                 
                 {/* Step 2: Upload */}
-                 <div className="w-full lg:sticky top-8">
+                 <div className="w-full">
                     {activeTab === 'wedding' ? (
                         <CoupleImageUploader
                             title="Bước 2: Cung Cấp 'Nguyên Liệu'"
@@ -911,7 +949,7 @@ function App() {
                         />
                     ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
                         <ImageUploader 
-                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                             title="Bước 2: Cung Cấp 'Nguyên Liệu'"
                             description={uploaderDescription}
                             onImagesChange={handleImagesChange} 
                             preview={previews[0]} 
@@ -964,10 +1002,8 @@ function App() {
                   images={generatedImages} 
                   isLoading={isLoading}
                   onImageClick={openViewer}
-                  onGenerateVideo={handleGenerateVideo}
+                  onInitiateVideoGeneration={handleInitiateVideoGeneration}
                   isVideoLoading={isVideoLoading}
-                  hasSelectedVeoKey={hasSelectedVeoKey}
-                  onSelectVeoKey={() => (window as any).aistudio?.openSelectKey()}
                   onReuseSettings={handleReuseSettings}
                 />
             </div>
@@ -1006,10 +1042,7 @@ function App() {
 
       {viewerIndex !== null && (
         <ImageViewer 
-          images={generatedImages
-            .map(img => (typeof img === 'object' ? img.url : null))
-            .filter((url): url is string => !!url)
-          }
+          images={generatedImages.map(img => img.url)}
           currentIndex={viewerIndex}
           onClose={closeViewer}
           onNavigate={navigateViewer}

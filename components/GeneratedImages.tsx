@@ -7,14 +7,12 @@ interface GeneratedImage {
 }
 
 interface GeneratedImagesProps {
-    images: Array<string | GeneratedImage>;
+    images: GeneratedImage[];
     isLoading: boolean;
     onImageClick: (index: number) => void;
     activeTab: string;
-    onGenerateVideo: (index: number) => void;
+    onInitiateVideoGeneration: (index: number) => void;
     isVideoLoading: boolean;
-    hasSelectedVeoKey: boolean;
-    onSelectVeoKey: () => void;
     onReuseSettings: (settings: any) => void;
 }
 
@@ -40,14 +38,13 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
     isLoading, 
     onImageClick, 
     activeTab, 
-    onGenerateVideo,
+    onInitiateVideoGeneration,
     isVideoLoading,
-    hasSelectedVeoKey,
-    onSelectVeoKey,
     onReuseSettings
 }) => {
-    const loadingPlaceholders = images.filter(img => typeof img === 'string').length;
-    const loadedImages = images.filter((img): img is GeneratedImage => typeof img === 'object');
+    
+    // Determine the number of placeholders based on context
+    const placeholderCount = isLoading ? (images.length > 0 ? images.length : 1) : 0;
 
     return (
         <Panel>
@@ -58,7 +55,7 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                 </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[40rem] overflow-y-auto pr-2">
-                {loadedImages.map((image, index) => (
+                {images.map((image, index) => (
                     <div key={index} className="aspect-square group relative">
                         <img 
                           src={image.url} 
@@ -86,7 +83,7 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                         {activeTab === 'product' && (
                             <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center">
                                  <button
-                                    onClick={() => hasSelectedVeoKey ? onGenerateVideo(index) : onSelectVeoKey()}
+                                    onClick={() => onInitiateVideoGeneration(index)}
                                     disabled={isVideoLoading}
                                     className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-white bg-emerald-600/80 hover:bg-emerald-600 rounded-md backdrop-blur-sm transition-all disabled:bg-slate-600 disabled:cursor-wait"
                                 >
@@ -101,7 +98,7 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                                     ) : (
                                         <>
                                             <VideoIcon className="w-4 h-4" />
-                                            <span>{hasSelectedVeoKey ? 'Tạo Video' : 'Chọn Key & Tạo Video'}</span>
+                                            <span>Tạo Video</span>
                                         </>
                                     )}
                                 </button>
@@ -112,7 +109,7 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                         )}
                     </div>
                 ))}
-                {isLoading && Array.from({ length: loadingPlaceholders }).map((_, index) => (
+                {isLoading && Array.from({ length: placeholderCount }).map((_, index) => (
                     <LoadingSkeleton key={`loading-${index}`} />
                 ))}
             </div>
