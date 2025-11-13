@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -22,7 +23,6 @@ import { AdminPanel } from './components/AdminPanel';
 import { PendingApproval } from './components/PendingApproval';
 import { UserMenu } from './components/UserMenu';
 import { UsageGuide } from './components/UsageGuide';
-import { VeoApiKeyInfoModal } from './components/VeoApiKeyInfoModal';
 
 
 // Constants and Types
@@ -90,12 +90,9 @@ function App() {
   const [ai, setAi] = useState<GoogleGenAI | null>(null);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
-  const [hasSelectedVeoKey, setHasSelectedVeoKey] = useState(false);
 
   // UI State
   const [showGuide, setShowGuide] = useState(false);
-  const [showVeoKeyInfo, setShowVeoKeyInfo] = useState(false);
-  const [videoGenerationIndex, setVideoGenerationIndex] = useState<number | null>(null);
 
   // State management
   const [mode, setMode] = useState<'single' | 'group'>('single');
@@ -132,13 +129,6 @@ function App() {
   const [idPhotoSize, setIdPhotoSize] = useState<IdPhotoSize>(ID_PHOTO_SIZES[0]);
   const [idPhotoBackground, setIdPhotoBackground] = useState<IdPhotoBackground>(ID_PHOTO_BACKGROUNDS[0]);
   const [idPhotoAttire, setIdPhotoAttire] = useState<IdPhotoAttire>(ID_PHOTO_ATTIRES[0]);
-
-  // Video Generation State
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
-  const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
-
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
@@ -216,16 +206,6 @@ function App() {
     }
   }, []);
   
-  useEffect(() => {
-    if (userProfile && (window as any).aistudio) {
-        const checkKey = async () => {
-            if (await (window as any).aistudio.hasSelectedApiKey()) {
-                setHasSelectedVeoKey(true);
-            }
-        };
-        checkKey();
-    }
-  }, [userProfile]);
 
   // New function for handling fresh key submission with verification
   const handleApiKeySubmit = useCallback(async (apiKey: string, remember: boolean) => {
@@ -521,8 +501,6 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
     setIsLoading(true);
     setError(null);
     setGeneratedImages([]);
-    setGeneratedVideoUrl(null); // Clear previous video
-    setVideoError(null);
 
     try {
       const prompt = constructPrompt();
@@ -587,122 +565,6 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   }, [ai, currentSourceImages, constructPrompt, numberOfImages, activeTab, setApiKeyError, accessories, celebrityPrompt, customHeight, customWidth, idPhotoAttire, idPhotoBackground, idPhotoSize, isAccessoryEnabled, mode, panoramaPrompt, productPrompt, selectedAspectRatio, selectedImageType, selectedStyle, stylePrompt, travelPrompt]);
   
-  const handleGenerateVideo = useCallback(async (imageIndex: number) => {
-    const sourceImageObj = generatedImages[imageIndex];
-    if (!sourceImageObj) {
-        setVideoError("Ảnh nguồn để tạo video không tồn tại.");
-        return;
-    }
-    const sourceImage = sourceImageObj.url;
-
-    // Check for the AI client first.
-    if (!ai) {
-        setVideoError("AI client chưa sẵn sàng. Vui lòng kiểm tra API Key.");
-        return;
-    }
-
-
-    setIsVideoLoading(true);
-    setVideoError(null);
-    setGeneratedVideoUrl(null);
-
-    const loadingMessages = [
-        "AI đang đọc kịch bản...",
-        "Chuẩn bị máy quay và ánh sáng...",
-        "Bắt đầu cảnh quay đầu tiên...",
-        "AI đang chỉ đạo diễn xuất...",
-        "Thêm hiệu ứng đặc biệt...",
-        "Dựng phim và xử lý hậu kỳ...",
-        "Sắp có bản final cut, vui lòng chờ...",
-    ];
-
-    let messageIndex = 0;
-    setVideoLoadingMessage(loadingMessages[messageIndex]);
-    const messageInterval = setInterval(() => {
-        messageIndex = (messageIndex + 1) % loadingMessages.length;
-        setVideoLoadingMessage(loadingMessages[messageIndex]);
-    }, 5000);
-
-    try {
-        if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
-            await (window as any).aistudio.openSelectKey();
-            setHasSelectedVeoKey(true);
-        }
-
-        // Use the existing, validated AI client instead of creating a new one with process.env
-        const videoAi = ai;
-
-        const base64Image = sourceImage.split(',')[1];
-        const videoPrompt = `Tạo một video quảng cáo ngắn (khoảng 5-7 giây) cho sản phẩm trong ảnh. Video cần có chuyển động mượt mà, chuyên nghiệp, có thể là máy quay lia chậm quanh sản phẩm, hoặc zoom vào các chi tiết nổi bật. Giữ nguyên bối cảnh và phong cách của ảnh.`;
-        
-        let operation = await videoAi.models.generateVideos({
-            model: 'veo-3.1-fast-generate-preview',
-            prompt: videoPrompt,
-            image: {
-                imageBytes: base64Image,
-                mimeType: 'image/png',
-            },
-            config: {
-                numberOfVideos: 1,
-                resolution: '720p',
-                aspectRatio: '16:9'
-            }
-        });
-
-        while (!operation.done) {
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            operation = await videoAi.operations.getVideosOperation({ operation: operation });
-        }
-
-        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-        if (downloadLink) {
-             const apiKeyForFetch = localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
-             if (!apiKeyForFetch) {
-                 throw new Error("API Key for fetching video not found.");
-             }
-             const response = await fetch(`${downloadLink}&key=${apiKeyForFetch}`);
-             const videoBlob = await response.blob();
-             const videoUrl = URL.createObjectURL(videoBlob);
-             setGeneratedVideoUrl(videoUrl);
-        } else {
-             throw new Error("Không nhận được link video từ API.");
-        }
-
-    } catch (e: any) {
-        console.error("Video generation failed:", e);
-        const errorMessage = e?.message?.toLowerCase() || '';
-        if (errorMessage.includes("requested entity was not found")) {
-            setVideoError("API Key không hợp lệ cho việc tạo video. Vui lòng chọn lại Key và thử lại.");
-            setHasSelectedVeoKey(false);
-        } else {
-             setVideoError("Tạo video thất bại. Vui lòng thử lại sau.");
-        }
-    } finally {
-        setIsVideoLoading(false);
-        clearInterval(messageInterval);
-        setVideoLoadingMessage('');
-    }
-  }, [generatedImages, ai]);
-
-  const handleInitiateVideoGeneration = useCallback((index: number) => {
-      setVideoGenerationIndex(index);
-      setShowVeoKeyInfo(true);
-  }, []);
-
-  const handleConfirmVeoKeySelection = useCallback(async () => {
-    setShowVeoKeyInfo(false);
-    if (videoGenerationIndex !== null) {
-      if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
-          await (window as any).aistudio.openSelectKey();
-          // Assume success after dialog opens to avoid race conditions.
-          setHasSelectedVeoKey(true); 
-      }
-      handleGenerateVideo(videoGenerationIndex);
-    }
-    setVideoGenerationIndex(null);
-  }, [videoGenerationIndex, handleGenerateVideo]);
-
-
   const createPromptChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
       return (value: string) => {
           setter(value);
@@ -736,8 +598,6 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
       setSourceImages([]);
       setCoupleSourceImages([null, null]);
       setGeneratedImages([]);
-      setGeneratedVideoUrl(null);
-      setVideoError(null);
       setIsCustomPromptActive(false);
   }, []);
 
@@ -845,13 +705,6 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
             <AdminPanel onClose={() => setShowAdminPanel(false)} currentUserProfile={userProfile} />
         )}
         
-        {showVeoKeyInfo && (
-            <VeoApiKeyInfoModal 
-                onClose={() => setShowVeoKeyInfo(false)}
-                onConfirm={handleConfirmVeoKeySelection}
-            />
-        )}
-
         <header className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-12 pb-8 border-b border-emerald-400/20">
             {/* Title and Subtitle */}
             <div className="text-center sm:text-left">
@@ -1002,41 +855,9 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
                   images={generatedImages} 
                   isLoading={isLoading}
                   onImageClick={openViewer}
-                  onInitiateVideoGeneration={handleInitiateVideoGeneration}
-                  isVideoLoading={isVideoLoading}
                   onReuseSettings={handleReuseSettings}
                 />
             </div>
-            
-            {/* Video Results */}
-            {(isVideoLoading || generatedVideoUrl || videoError) && (
-                <div className="mt-8">
-                    <Panel>
-                        <h2 className="text-lg font-bold text-slate-200 mb-4 text-left">Video Quảng Cáo</h2>
-                        {isVideoLoading && (
-                            <div className="flex flex-col items-center justify-center h-60 bg-slate-800 rounded-lg text-center">
-                                 <svg className="animate-spin h-8 w-8 text-emerald-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <p className="text-lg font-semibold text-white">Đang tạo video của bạn...</p>
-                                <p className="text-slate-400 mt-2">{videoLoadingMessage}</p>
-                                <p className="text-xs text-slate-500 mt-4">(Quá trình này có thể mất vài phút)</p>
-                            </div>
-                        )}
-                        {videoError && (
-                            <div className="flex items-center justify-center h-60 bg-red-900/30 rounded-lg text-red-300 text-center p-4">
-                                {videoError}
-                            </div>
-                        )}
-                        {generatedVideoUrl && (
-                             <div className="aspect-video bg-black rounded-lg">
-                                <video src={generatedVideoUrl} controls autoPlay className="w-full h-full rounded-lg" />
-                            </div>
-                        )}
-                    </Panel>
-                </div>
-            )}
         </div>
       </main>
 

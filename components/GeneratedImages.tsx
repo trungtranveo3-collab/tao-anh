@@ -11,19 +11,11 @@ interface GeneratedImagesProps {
     isLoading: boolean;
     onImageClick: (index: number) => void;
     activeTab: string;
-    onInitiateVideoGeneration: (index: number) => void;
-    isVideoLoading: boolean;
     onReuseSettings: (settings: any) => void;
 }
 
 const LoadingSkeleton: React.FC = () => (
     <div className="aspect-square bg-slate-800 rounded-lg animate-pulse"></div>
-);
-
-const VideoIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
 );
 
 const MagicWandIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
@@ -38,8 +30,6 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
     isLoading, 
     onImageClick, 
     activeTab, 
-    onInitiateVideoGeneration,
-    isVideoLoading,
     onReuseSettings
 }) => {
     
@@ -79,34 +69,6 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                         >
                             <MagicWandIcon className="w-5 h-5" />
                         </button>
-
-                        {activeTab === 'product' && (
-                            <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center">
-                                 <button
-                                    onClick={() => onInitiateVideoGeneration(index)}
-                                    disabled={isVideoLoading}
-                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-white bg-emerald-600/80 hover:bg-emerald-600 rounded-md backdrop-blur-sm transition-all disabled:bg-slate-600 disabled:cursor-wait"
-                                >
-                                    {isVideoLoading ? (
-                                        <>
-                                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            <span>Đang xử lý...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <VideoIcon className="w-4 h-4" />
-                                            <span>Tạo Video</span>
-                                        </>
-                                    )}
-                                </button>
-                                 <p className="text-center text-white text-[10px] mt-1.5 p-1 bg-black/50 rounded-md">
-                                    (Thời gian tạo khoảng 1-3 phút)
-                                 </p>
-                            </div>
-                        )}
                     </div>
                 ))}
                 {isLoading && Array.from({ length: placeholderCount }).map((_, index) => (
