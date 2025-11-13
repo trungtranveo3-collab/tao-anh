@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { User } from 'firebase/auth';
 
@@ -18,11 +19,6 @@ interface UserMenuProps {
 }
 
 // Icons
-const MenuIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-);
 const AdminIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5 text-sky-400' }) => (
      <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -66,12 +62,23 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, userProfile, onLogout,
         <div className="relative" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-12 h-12 bg-slate-800/50 hover:bg-slate-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-emerald-500 flex items-center justify-center"
                 aria-haspopup="true"
                 aria-expanded={isOpen}
                 aria-label="User menu"
+                title={user.displayName || user.email || 'User Menu'}
             >
-                <MenuIcon />
+                 {user.photoURL ? (
+                    <img
+                        src={user.photoURL}
+                        alt={user.displayName || 'User Avatar'}
+                        className="w-full h-full rounded-full object-cover"
+                    />
+                ) : (
+                    <span className="text-xl font-bold text-slate-200">
+                        {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                )}
             </button>
 
             {isOpen && (
@@ -84,8 +91,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, userProfile, onLogout,
                         {`@keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } } .animate-fade-in-down { animation: fade-in-down 0.2s ease-out forwards; }`}
                     </style>
                     <div className="p-4 border-b border-slate-700">
-                        <p className="text-sm text-slate-400">Đã đăng nhập với</p>
-                        <p className="font-semibold text-white truncate">{user.email}</p>
+                        <p className="font-semibold text-white truncate">{user.displayName || user.email}</p>
+                        <p className="text-sm text-slate-400">{userProfile.role === 'admin' ? 'Quản trị viên' : 'Thành viên'}</p>
                     </div>
                     <div className="py-2" role="none">
                         {userProfile.role === 'admin' && (

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -48,6 +49,31 @@ interface UserProfile {
     expiresAt?: Timestamp;
 }
 
+interface GenerationSettings {
+  activeTab: string;
+  mode: 'single' | 'group';
+  selectedStyle: Style;
+  stylePrompt: string;
+  celebrityPrompt: string;
+  travelPrompt: string;
+  panoramaPrompt: string;
+  productPrompt: string;
+  isAccessoryEnabled: boolean;
+  accessories: Record<string, Accessory>;
+  selectedImageType: ImageType;
+  selectedAspectRatio: string;
+  customWidth: number | '';
+  customHeight: number | '';
+  idPhotoSize: IdPhotoSize;
+  idPhotoBackground: IdPhotoBackground;
+  idPhotoAttire: IdPhotoAttire;
+}
+
+interface GeneratedImage {
+    url: string;
+    settings: GenerationSettings;
+}
+
 const SESSION_STORAGE_KEY = 'gemini-api-key-session';
 const LOCAL_STORAGE_KEY = 'gemini-api-key-local';
 
@@ -75,7 +101,7 @@ function App() {
   const [coupleSourceImages, setCoupleSourceImages] = useState<(File|null)[]>([null, null]);
 
   const [previews, setPreviews] = useState<string[]>([]);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<Array<string | GeneratedImage>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +114,8 @@ function App() {
   const [travelPrompt, setTravelPrompt] = useState('');
   const [panoramaPrompt, setPanoramaPrompt] = useState('');
   const [productPrompt, setProductPrompt] = useState('');
+  const [isCustomPromptActive, setIsCustomPromptActive] = useState(false);
+
 
   const [isAccessoryEnabled, setIsAccessoryEnabled] = useState(false);
   const [accessories, setAccessories] = useState<Record<string, Accessory>>({});
@@ -482,6 +510,12 @@ function App() {
       return;
     }
     
+    const currentSettings: GenerationSettings = {
+      activeTab, mode, selectedStyle, stylePrompt, celebrityPrompt, travelPrompt,
+      panoramaPrompt, productPrompt, isAccessoryEnabled, accessories, selectedImageType,
+      selectedAspectRatio, customWidth, customHeight, idPhotoSize, idPhotoBackground, idPhotoAttire
+    };
+
     setIsLoading(true);
     setError(null);
     setGeneratedImages(Array(numberOfImages).fill('loading'));
@@ -508,13 +542,16 @@ function App() {
       const generationPromises = Array(numberOfImages).fill(null).map(() => generateImage());
       const responses = await Promise.all(generationPromises);
       
-      const newImages: string[] = [];
+      const newImages: GeneratedImage[] = [];
       responses.forEach(response => {
         const imagePartFound = response.candidates?.[0]?.content?.parts.find(part => part.inlineData);
         if (imagePartFound?.inlineData) {
           const base64ImageBytes = imagePartFound.inlineData.data;
           const mimeType = imagePartFound.inlineData.mimeType;
-          newImages.push(`data:${mimeType};base64,${base64ImageBytes}`);
+          newImages.push({
+            url: `data:${mimeType};base64,${base64ImageBytes}`,
+            settings: currentSettings,
+          });
         }
       });
 
@@ -540,14 +577,16 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [ai, currentSourceImages, constructPrompt, numberOfImages, activeTab, setApiKeyError]);
+  }, [ai, currentSourceImages, constructPrompt, numberOfImages, activeTab, setApiKeyError, accessories, celebrityPrompt, customHeight, customWidth, idPhotoAttire, idPhotoBackground, idPhotoSize, isAccessoryEnabled, mode, panoramaPrompt, productPrompt, selectedAspectRatio, selectedImageType, selectedStyle, stylePrompt, travelPrompt]);
   
   const handleGenerateVideo = useCallback(async (imageIndex: number) => {
-    const sourceImage = generatedImages[imageIndex];
-    if (!sourceImage) {
+    const sourceImageObj = generatedImages[imageIndex];
+    if (!sourceImageObj || typeof sourceImageObj === 'string') {
         setVideoError("Ảnh nguồn để tạo video không tồn tại.");
         return;
     }
+    const sourceImage = sourceImageObj.url;
+
 
     setIsVideoLoading(true);
     setVideoError(null);
@@ -626,6 +665,24 @@ function App() {
     }
   }, [generatedImages]);
 
+  const createPromptChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
+      return (value: string) => {
+          setter(value);
+          setIsCustomPromptActive(!!value);
+      };
+  };
+
+  const handleStyleSelect = (style: Style) => {
+      setSelectedStyle(style);
+      // Clear all custom prompts and deactivate custom mode
+      setStylePrompt('');
+      setCelebrityPrompt('');
+      setTravelPrompt('');
+      setPanoramaPrompt('');
+      setProductPrompt('');
+      setIsCustomPromptActive(false);
+  };
+
   const handleTabChange = useCallback((tabId: string) => {
       setActiveTab(tabId);
       const firstStyleForTab = STYLES.find(s => s.category === tabId);
@@ -643,12 +700,13 @@ function App() {
       setGeneratedImages([]);
       setGeneratedVideoUrl(null);
       setVideoError(null);
+      setIsCustomPromptActive(false);
   }, []);
 
   const openViewer = useCallback((index: number) => setViewerIndex(index), []);
   const closeViewer = useCallback(() => setViewerIndex(null), []);
   const navigateViewer = useCallback((newIndex: number) => {
-      const totalImages = generatedImages.filter(img => img !== 'loading').length;
+      const totalImages = generatedImages.filter(img => typeof img === 'object').length;
       if (newIndex >= 0 && newIndex < totalImages) {
           setViewerIndex(newIndex);
       }
@@ -659,6 +717,34 @@ function App() {
     localStorage.setItem('hideUsageGuide', 'true');
   }, []);
   
+  const handleReuseSettings = useCallback((settings: GenerationSettings) => {
+    setActiveTab(settings.activeTab);
+    setMode(settings.mode);
+    setSelectedStyle(settings.selectedStyle);
+    setStylePrompt(settings.stylePrompt);
+    setCelebrityPrompt(settings.celebrityPrompt);
+    setTravelPrompt(settings.travelPrompt);
+    setPanoramaPrompt(settings.panoramaPrompt);
+    setProductPrompt(settings.productPrompt);
+    setIsAccessoryEnabled(settings.isAccessoryEnabled);
+    setAccessories(settings.accessories);
+    setSelectedImageType(settings.selectedImageType);
+    setSelectedAspectRatio(settings.selectedAspectRatio);
+    setCustomWidth(settings.customWidth);
+    setCustomHeight(settings.customHeight);
+    setIdPhotoSize(settings.idPhotoSize);
+    setIdPhotoBackground(settings.idPhotoBackground);
+    setIdPhotoAttire(settings.idPhotoAttire);
+
+    // Activate custom prompt mode if any custom prompt has value
+    setIsCustomPromptActive(
+      !!settings.stylePrompt || !!settings.celebrityPrompt || !!settings.travelPrompt ||
+      !!settings.panoramaPrompt || !!settings.productPrompt
+    );
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const couplePreviews = useMemo(() => {
     return [
         coupleSourceImages[0] ? previews.find(p => p.startsWith('data:image')) : undefined,
@@ -674,16 +760,7 @@ function App() {
 
   }, [coupleSourceImages, previews]);
   
-  const uploaderLabel = useMemo(() => {
-    switch(activeTab) {
-        case 'product':
-            return 'Bước 1: Tải Ảnh Sản Phẩm';
-        case 'id_photo':
-            return 'Bước 1: Tải Ảnh Chân Dung';
-        default:
-            return 'Bước 1: Tải Ảnh Gốc';
-    }
-  }, [activeTab]);
+  const uploaderDescription = "Ảnh gốc càng rõ nét, AI càng 'ảo diệu'!";
 
   if (isAuthLoading) {
     return (
@@ -785,47 +862,26 @@ function App() {
 
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-                {/* Step 1: Upload */}
+                {/* Step 1: Customize */}
                 <div className="w-full">
-                    {activeTab === 'wedding' ? (
-                        <CoupleImageUploader
-                            onImageChange={handleCoupleImageChange}
-                            previews={[previews[0], coupleSourceImages[0] && coupleSourceImages[1] ? previews[1] : undefined]}
-                        />
-                    ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
-                        <ImageUploader 
-                            label={uploaderLabel}
-                            onImagesChange={handleImagesChange} 
-                            preview={previews[0]} 
-                        />
-                    ) : (
-                        <MultiImageUploader 
-                            onFilesChange={handleImagesChange}
-                            previews={previews}
-                            files={sourceImages}
-                        />
-                    )}
-                </div>
-                
-                {/* Step 2: Customize */}
-                <div className="w-full lg:sticky top-8">
                     <Panel className="flex flex-col space-y-8">
-                         <h2 className="text-lg font-bold text-slate-200 text-left">Bước 2: Lựa Chọn Sáng Tạo</h2>
+                         <h2 className="text-lg font-bold text-slate-200 text-left">Bước 1: Lựa Chọn Sáng Tạo</h2>
                          <StyleSelector 
                             activeTab={activeTab}
                             onTabChange={handleTabChange}
                             selectedStyle={selectedStyle}
-                            onStyleSelect={setSelectedStyle}
+                            onStyleSelect={handleStyleSelect}
                             stylePrompt={stylePrompt}
-                            onStylePromptChange={setStylePrompt}
+                            onStylePromptChange={createPromptChangeHandler(setStylePrompt)}
                             celebrityPrompt={celebrityPrompt}
-                            onCelebrityPromptChange={setCelebrityPrompt}
+                            onCelebrityPromptChange={createPromptChangeHandler(setCelebrityPrompt)}
                             travelPrompt={travelPrompt}
-                            onTravelPromptChange={setTravelPrompt}
+                            onTravelPromptChange={createPromptChangeHandler(setTravelPrompt)}
                             panoramaPrompt={panoramaPrompt}
-                            onPanoramaPromptChange={setPanoramaPrompt}
+                            onPanoramaPromptChange={createPromptChangeHandler(setPanoramaPrompt)}
                             productPrompt={productPrompt}
-                            onProductPromptChange={setProductPrompt}
+                            onProductPromptChange={createPromptChangeHandler(setProductPrompt)}
+                            isCustomPromptActive={isCustomPromptActive}
                         />
                         {mode === 'single' && !['wedding', 'product', 'id_photo'].includes(activeTab) && (
                             <AccessorySelector 
@@ -836,6 +892,33 @@ function App() {
                             />
                         )}
                     </Panel>
+                </div>
+                
+                {/* Step 2: Upload */}
+                 <div className="w-full lg:sticky top-8">
+                    {activeTab === 'wedding' ? (
+                        <CoupleImageUploader
+                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                            description={uploaderDescription}
+                            onImageChange={handleCoupleImageChange}
+                            previews={[previews[0], coupleSourceImages[0] && coupleSourceImages[1] ? previews[1] : undefined]}
+                        />
+                    ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
+                        <ImageUploader 
+                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                            description={uploaderDescription}
+                            onImagesChange={handleImagesChange} 
+                            preview={previews[0]} 
+                        />
+                    ) : (
+                        <MultiImageUploader 
+                            title="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                            description={uploaderDescription}
+                            onFilesChange={handleImagesChange}
+                            previews={previews}
+                            files={sourceImages}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -879,6 +962,7 @@ function App() {
                   isVideoLoading={isVideoLoading}
                   hasSelectedVeoKey={hasSelectedVeoKey}
                   onSelectVeoKey={() => (window as any).aistudio?.openSelectKey()}
+                  onReuseSettings={handleReuseSettings}
                 />
             </div>
             
@@ -916,7 +1000,10 @@ function App() {
 
       {viewerIndex !== null && (
         <ImageViewer 
-          images={generatedImages.filter(img => img !== 'loading')}
+          images={generatedImages
+            .map(img => (typeof img === 'object' ? img.url : null))
+            .filter((url): url is string => !!url)
+          }
           currentIndex={viewerIndex}
           onClose={closeViewer}
           onNavigate={navigateViewer}

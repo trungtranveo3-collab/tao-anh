@@ -16,8 +16,8 @@ const content = {
         title: "Chào mừng bạn đến với AI Photoshoot!",
         subtitle: "Trợ lý sáng tạo đa năng của bạn. Bắt đầu chỉ với 3 bước đơn giản:",
         steps: [
-            { title: "Bước 1: Tải lên", description: "Tải lên một hoặc nhiều ảnh gốc của bạn. Ảnh càng rõ nét, kết quả càng ấn tượng." },
-            { title: "Bước 2: Chọn Tác vụ", description: "Khám phá các tab 'Phong Cách', 'Ảnh Cưới', 'Sản Phẩm'... Mỗi tab là một năng lực khác nhau của AI." },
+            { title: "Bước 1: Lựa Chọn Tác vụ", description: "Khám phá các tab 'Phong Cách', 'Ảnh Cưới', 'Sản Phẩm'... Mỗi tab là một năng lực khác nhau của AI." },
+            { title: "Bước 2: Tải lên", description: "Tải lên một hoặc nhiều ảnh gốc của bạn. Ảnh càng rõ nét, kết quả càng ấn tượng." },
             { title: "Bước 3: Tùy chỉnh & Sáng tạo", description: "Chọn phong cách chi tiết, thêm phụ kiện, điều chỉnh kích thước và nhấn nút 'Bắt Đầu Phép Màu'!" }
         ],
         button: "Đã hiểu, bắt đầu thôi!",
@@ -26,8 +26,8 @@ const content = {
         title: "Welcome to AI Photoshoot!",
         subtitle: "Your versatile creative assistant. Get started in just 3 simple steps:",
         steps: [
-            { title: "Step 1: Upload", description: "Upload one or more source photos. Clearer images yield more impressive results." },
-            { title: "Step 2: Choose a Task", description: "Explore the 'Style', 'Wedding', 'Product' tabs... Each tab represents a different AI capability." },
+            { title: "Step 1: Choose a Task", description: "Explore the 'Style', 'Wedding', 'Product' tabs... Each tab represents a different AI capability." },
+            { title: "Step 2: Upload", description: "Upload one or more source photos. Clearer images yield more impressive results." },
             { title: "Step 3: Customize & Create", description: "Select a detailed style, add accessories, adjust dimensions, and hit the 'Start the Magic' button!" }
         ],
         button: "Got it, let's start!",

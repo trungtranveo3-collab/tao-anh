@@ -1,8 +1,13 @@
 import React from 'react';
 import { Panel } from './Panel';
 
+interface GeneratedImage {
+    url: string;
+    settings: any; // Can't import from App.tsx, so using any
+}
+
 interface GeneratedImagesProps {
-    images: string[];
+    images: Array<string | GeneratedImage>;
     isLoading: boolean;
     onImageClick: (index: number) => void;
     activeTab: string;
@@ -10,6 +15,7 @@ interface GeneratedImagesProps {
     isVideoLoading: boolean;
     hasSelectedVeoKey: boolean;
     onSelectVeoKey: () => void;
+    onReuseSettings: (settings: any) => void;
 }
 
 const LoadingSkeleton: React.FC = () => (
@@ -22,6 +28,12 @@ const VideoIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const MagicWandIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v1.046a1 1 0 01-1.414.954l-.822-.822a1 1 0 01.954-1.414zM12 18v1.046a1 1 0 01-1.414.954l-.822-.822a1 1 0 01.954-1.414V18zM4.929 4.929a1 1 0 011.414 0l.822.822a1 1 0 01-1.414 1.414l-.822-.822a1 1 0 010-1.414zM15.071 15.071a1 1 0 011.414 0l.822.822a1 1 0 01-1.414 1.414l-.822-.822a1 1 0 010-1.414zM2 11.046a1 1 0 011-1h1.046a1 1 0 010 2H3a1 1 0 01-1-1zM18 11.046a1 1 0 011-1h1.046a1 1 0 110 2H19a1 1 0 01-1-1zM4.929 15.071a1 1 0 010-1.414l.822-.822a1 1 0 011.414 1.414l-.822.822a1 1 0 01-1.414 0zM15.071 4.929a1 1 0 010-1.414l.822-.822a1 1 0 111.414 1.414l-.822.822a1 1 0 01-1.414 0zM10 5a5 5 0 100 10 5 5 0 000-10z" clipRule="evenodd" />
+    </svg>
+);
+
 
 export const GeneratedImages: React.FC<GeneratedImagesProps> = ({ 
     images, 
@@ -31,10 +43,11 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
     onGenerateVideo,
     isVideoLoading,
     hasSelectedVeoKey,
-    onSelectVeoKey
+    onSelectVeoKey,
+    onReuseSettings
 }) => {
-    const loadingPlaceholders = images.filter(img => img === 'loading').length;
-    const loadedImages = images.filter(img => img !== 'loading');
+    const loadingPlaceholders = images.filter(img => typeof img === 'string').length;
+    const loadedImages = images.filter((img): img is GeneratedImage => typeof img === 'object');
 
     return (
         <Panel>
@@ -48,7 +61,7 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                 {loadedImages.map((image, index) => (
                     <div key={index} className="aspect-square group relative">
                         <img 
-                          src={image} 
+                          src={image.url} 
                           alt={`Generated image ${index + 1}`} 
                           className="w-full h-full object-cover rounded-lg shadow-md transition-transform duration-300 group-hover:scale-105" 
                         />
@@ -60,8 +73,18 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
+
+                        <button
+                            title="Sử dụng lại phong cách này"
+                            className="absolute top-2 left-2 p-2 bg-slate-800/70 rounded-full text-white hover:bg-emerald-500 transition-all opacity-0 group-hover:opacity-100 transform hover:scale-110"
+                            onClick={(e) => { e.stopPropagation(); onReuseSettings(image.settings); }}
+                            aria-label="Sử dụng lại phong cách này"
+                        >
+                            <MagicWandIcon className="w-5 h-5" />
+                        </button>
+
                         {activeTab === 'product' && (
-                            <div className="absolute bottom-2 left-2 right-2">
+                            <div className="absolute bottom-2 left-2 right-2 flex flex-col items-center">
                                  <button
                                     onClick={() => hasSelectedVeoKey ? onGenerateVideo(index) : onSelectVeoKey()}
                                     disabled={isVideoLoading}
@@ -82,8 +105,9 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
                                         </>
                                     )}
                                 </button>
-                                 {!hasSelectedVeoKey && <p className="text-center text-white text-[10px] mt-1 p-1 bg-black/50 rounded">Cần chọn API Key để tạo video</p>}
-
+                                 <p className="text-center text-white text-[10px] mt-1.5 p-1 bg-black/50 rounded-md">
+                                    (Thời gian tạo khoảng 1-3 phút)
+                                 </p>
                             </div>
                         )}
                     </div>
