@@ -507,9 +507,9 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
       console.log("Final Prompt:", prompt); // For debugging
       const imageParts = await Promise.all(currentSourceImages.map(file => fileToGenerativePart(file)));
       
-      const contents = [{
+      const contents = {
         parts: [...imageParts, { text: prompt }],
-      }];
+      };
       
       const generateImage = () => ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
