@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -243,7 +244,7 @@ function App() {
           // Perform a lightweight test call to validate the key
           await genAI.models.generateContent({
               model: 'gemini-2.5-flash',
-              contents: 'test',
+              contents: [{parts: [{text: 'test'}]}],
           });
 
           // If the test call succeeds, finalize setup
@@ -528,9 +529,9 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
       console.log("Final Prompt:", prompt); // For debugging
       const imageParts = await Promise.all(currentSourceImages.map(file => fileToGenerativePart(file)));
       
-      const contents = {
+      const contents = [{
         parts: [...imageParts, { text: prompt }],
-      };
+      }];
       
       const generateImage = () => ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -950,14 +951,13 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
                     ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
                         <ImageUploader 
                              title="Bước 2: Cung Cấp 'Nguyên Liệu'"
-                            description={uploaderDescription}
+                             label="Bước 2: Cung Cấp 'Nguyên Liệu'"
                             onImagesChange={handleImagesChange} 
                             preview={previews[0]} 
                         />
                     ) : (
                         <MultiImageUploader 
                             title="Bước 2: Cung Cấp 'Nguyên Liệu'"
-                            description={uploaderDescription}
                             onFilesChange={handleImagesChange}
                             previews={previews}
                             files={sourceImages}
