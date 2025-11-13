@@ -570,8 +570,14 @@ function App() {
         setAi(null);
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
         localStorage.removeItem(LOCAL_STORAGE_KEY);
+      } else if (errorMessage.includes('safety')) {
+        setError('Nội dung không phù hợp. Hình ảnh hoặc yêu cầu của bạn có thể đã vi phạm chính sách an toàn. Vui lòng thử một ảnh hoặc ý tưởng khác.');
+      } else if (errorMessage.includes('quota')) {
+        setError('Bạn đã hết lượt sử dụng miễn phí cho hôm nay. Vui lòng kiểm tra hạn ngạch trên tài khoản Google AI của bạn.');
+      } else if (errorMessage.includes('fetch')) {
+         setError('Lỗi kết nối mạng. Vui lòng kiểm tra đường truyền internet và thử lại.');
       } else {
-        setError('Đã xảy ra lỗi trong quá trình tạo ảnh. Vui lòng kiểm tra console để biết thêm chi tiết.');
+        setError('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau một lát.');
       }
       setGeneratedImages([]);
     } finally {
