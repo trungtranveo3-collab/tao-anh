@@ -1,6 +1,6 @@
 import React from 'react';
 // FIX: Added 'Accessory' to the type imports to be used for BASE_ACCESSORY_DEFAULTS.
-import type { Style, StyleTab, ImageType, AccessorySuggestions, AccessoryDefaults, Accessory, AspectRatio, ProductCategory } from './types';
+import type { Style, StyleTab, ImageType, AccessorySuggestions, AccessoryDefaults, Accessory, AspectRatio, IdPhotoSize, IdPhotoBackground, IdPhotoAttire } from './types';
 
 // Icons for Styles
 const UserTieIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
@@ -36,11 +36,14 @@ const NatureIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' })
 const CityIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M15 11V5l-3-3-3 3v6H2v10h11v-5h-2v3H4v-6h9v5h2v-3h2v-2h-4z"/></svg>
 );
-const ProductIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.81.97H5.44l.8-.97zM5 19V8h14v11H5z"/></svg>
-);
 const TrendingIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>
+);
+const ShoppingBagIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/></svg>
+);
+const IdCardIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM9 11H6V9h3v2zm6 0h-3V9h3v2zm3 0h-1.5V9H18v2zm-9 4H6v-2h3v2zm3 0h-1.5v-2H12v2zm3 0h-3v-2h3v2zm3 0h-1.5v-2H18v2z"/></svg>
 );
 
 export const CustomPromptIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
@@ -112,8 +115,9 @@ export const GlassesIcon: React.FC<{ className?: string }> = ({ className = 'w-6
 export const STYLE_TABS: StyleTab[] = [
     { id: 'trends', name: 'Theo Trend' },
     { id: 'style', name: 'Phong Cách' },
-    { id: 'wedding', name: 'Ảnh Cưới' },
     { id: 'product', name: 'Sản Phẩm' },
+    { id: 'id_photo', name: 'Ảnh Thẻ' },
+    { id: 'wedding', name: 'Ảnh Cưới' },
     { id: 'celebrity', name: 'Ghép với Sao' },
     { id: 'travel', name: 'Du lịch' },
     { id: 'panorama', name: 'Toàn cảnh' },
@@ -161,93 +165,6 @@ const REGULAR_STYLES: Style[] = [
     { id: 'magazine', name: 'Tạp chí Nổi tiếng', icon: StarIcon, category: 'style', prompt: "Với tư cách là nhiếp ảnh gia thời trang của tạp chí Vogue, hãy tạo một bức ảnh bìa 8K đầy phong cách. **Chủ thể**: Người trong ảnh, trang phục thời thượng, thần thái đỉnh cao. **Bối cảnh**: Phông nền studio màu sắc hoặc một địa điểm kiến trúc độc đáo. **Ánh sáng**: Ánh sáng studio hoàn hảo, có thể sử dụng 'beauty dish' để làm nổi bật làn da và xương gò má. **Máy ảnh & Ống kính**: Chụp bằng ống kính 105mm f/1.4 để nén hậu cảnh và tập trung vào chủ thể. **Hậu kỳ**: Retouch da chuyên nghiệp, màu sắc rực rỡ, sống động. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
     { id: 'newspaper', name: 'Giang hồ Cũ', icon: NewspaperIcon, category: 'style', prompt: "Với tư cách là đạo diễn phim xã hội đen Hồng Kông thập niên 90, hãy tạo một bức ảnh 8K đậm chất 'giang hồ'. **Chủ thể**: Người trong ảnh, trang phục kiểu retro (sơ mi hoa, áo khoác da). **Bối cảnh**: Một con hẻm nhỏ ở Hồng Kông về đêm, hoặc một quán mạt chược. **Ánh sáng**: Ánh sáng kịch tính từ các nguồn sáng đơn lẻ, tạo bóng đổ mạnh. **Máy ảnh & Ống kính**: Mô phỏng máy quay phim cũ. **Hậu kỳ**: Chỉnh màu theo tông phim cũ, ngả vàng hoặc xanh, thêm hiệu ứng nhiễu hạt và có thể có vệt sáng mờ. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
 ];
-
-const generateProductStyles = (basePrompt: string, items: string[]): Style[] => {
-    return items.map(item => {
-        const id = `product_${basePrompt.substring(0,15)}_${item.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        const prompt = basePrompt.replace('{item}', item);
-        return {
-            id,
-            name: item,
-            icon: () => null, // No individual icons needed for grid items
-            category: 'product',
-            prompt: prompt,
-        };
-    });
-};
-
-export const PRODUCT_CATEGORIES: ProductCategory[] = [
-    {
-        id: 'product_model',
-        name: 'Với Người Mẫu',
-        icon: UserTieIcon,
-        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia quảng cáo sản phẩm cao cấp, hãy tạo một hình ảnh 4K siêu thực, chuyên nghiệp. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Tương tác**: Sản phẩm được trình bày một cách tự nhiên bởi **{item}**. **Bối cảnh & Ánh sáng**: Sử dụng ánh sáng studio mềm mại (softbox) để làm nổi bật chi tiết sản phẩm và người mẫu trên một phông nền sạch sẽ, phù hợp. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính macro 100mm f/5.6 để sản phẩm siêu nét. Hậu kỳ với màu sắc chuẩn xác, retouch da chuyên nghiệp. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Người mẫu phải tôn vinh sản phẩm, không làm lu mờ nó.", [
-            'Người mẫu nữ châu Á tóc dài', 'Người mẫu nam châu Âu lịch lãm', 'Người mẫu phi giới tính cá tính', 'Người mẫu fitness trong phòng gym', 'Doanh nhân thành đạt tại văn phòng',
-            'Gia đình đang sử dụng sản phẩm', 'Nhóm bạn trẻ trong buổi dã ngoại', 'Người mẫu beauty với làn da hoàn hảo', 'Cận cảnh bàn tay người mẫu', 'Người mẫu trong trang phục dạ hội',
-            'Người mẫu nam mặc suit', 'Người mẫu nữ mặc váy trắng', 'Người mẫu tương tác với sản phẩm', 'Người mẫu cười rạng rỡ', 'Người mẫu nhìn thẳng vào ống kính',
-            'Người mẫu trong bối cảnh tối giản', 'Người mẫu trên đường phố thành thị', 'Người mẫu trong quán cà phê sang trọng', 'Người mẫu lớn tuổi thanh lịch', 'Người mẫu nhí đáng yêu',
-            'Người mẫu tóc ngắn năng động', 'Người mẫu nam có râu quai nón', 'Người mẫu nữ với tàn nhang tự nhiên', 'Người mẫu đang tập yoga', 'Đầu bếp chuyên nghiệp trong bếp',
-            'Nghệ sĩ trong studio', 'Vận động viên đang hoạt động', 'Người mẫu trong bối cảnh công nghệ', 'Người mẫu với phong cách retro', 'Cặp đôi người mẫu tình cảm',
-            'Người mẫu nữ da màu tự tin', 'Người mẫu nam với hình xăm', 'Người mẫu mặc trang phục truyền thống', 'Bóng lưng của người mẫu', 'Người mẫu đang nhảy múa',
-            'Người mẫu dưới mưa', 'Người mẫu trong tuyết', 'Người mẫu trên sa mạc', 'Người mẫu dưới nước', 'Người mẫu với thú cưng',
-            'Người mẫu phản chiếu trong gương', 'Người mẫu trong bối cảnh công nghiệp', 'Người mẫu với ánh sáng neon', 'Ảnh chụp đen trắng với người mẫu', 'Người mẫu với biểu cảm ấn tượng',
-            'Người mẫu trong trang phục bơi', 'Người mẫu trên du thuyền', 'Người mẫu trong thư viện', 'Người mẫu chơi nhạc cụ', 'Người mẫu đọc sách', 'Người mẫu với ly cocktail'
-        ])
-    },
-    {
-        id: 'product_pharmacy',
-        name: 'Tại Nhà Thuốc',
-        icon: ProductIcon,
-        styles: generateProductStyles("Với tư cách là một chuyên gia marketing ngành dược, hãy tạo một hình ảnh 4K siêu thực, đáng tin cậy. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được trưng bày một cách nổi bật trên kệ của một **{item}**. Không gian sạch sẽ, sáng sủa và được sắp xếp gọn gàng. **Ánh sáng**: Ánh sáng trắng, đều, mô phỏng ánh sáng đèn LED trong các nhà thuốc hiện đại. **Máy ảnh & Hậu kỳ**: Chụp với độ sâu trường ảnh nông (shallow depth-of-field) để sản phẩm sắc nét trong khi các sản phẩm khác ở hậu cảnh hơi mờ đi. Màu sắc trung thực, rõ ràng. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Hình ảnh phải tạo cảm giác uy tín và chuyên nghiệp.", [
-            'FPT Long Châu sáng sủa', 'Pharmacity hiện đại', 'An Khang ngăn nắp', 'Guardian (khu vực VN)', 'Watsons (khu vực VN)', 'Medicare (khu vực VN)',
-            'Phano Pharmacy uy tín', 'Trung Sơn Pharma', 'Nhà thuốc ECO Pharmacy', 'Nhà thuốc Glee Pharmacy', 'Vistar Pharmacy',
-            'Một nhà thuốc lớn ở Hà Nội', 'Một nhà thuốc ở TP.HCM', 'Quầy thuốc bệnh viện', 'Nhà thuốc theo chuẩn GPP', 'Nhà thuốc truyền thống',
-            'Kệ trưng bày sản phẩm nổi bật', 'Phía sau quầy dược sĩ', 'Trên tay dược sĩ đang tư vấn', 'Khách hàng đang xem sản phẩm', 'Tủ kính trưng bày cao cấp',
-            'Nhà thuốc Long Châu (view từ ngoài)', 'Bên trong Pharmacity có dược sĩ', 'Kệ sản phẩm chức năng An Khang', 'Góc trưng bày của Guardian', 'Kệ mỹ phẩm tại Watsons',
-            'Giá thuốc của Medicare', 'Quầy thanh toán Phano Pharmacy', 'Kệ thuốc cho trẻ em', 'Kệ sản phẩm chăm sóc da', 'Kệ vitamin và khoáng chất',
-            'Nhà thuốc có tông màu xanh lá', 'Nhà thuốc có nội thất gỗ', 'Nhà thuốc tối giản, sạch sẽ', 'Nhà thuốc đông khách', 'Nhà thuốc vào ban đêm',
-            'Góc nhìn từ dưới lên kệ thuốc', 'Ảnh chụp macro sản phẩm trên kệ', 'Sản phẩm và logo nhà thuốc', 'Dược sĩ mặc áo blouse trắng', 'Kệ thuốc được sắp xếp khoa học',
-            'Nhà thuốc trong trung tâm thương mại', 'Nhà thuốc ở góc phố', 'Ánh sáng tự nhiên chiếu vào', 'Bảng hiệu nhà thuốc rõ nét', 'Không gian tư vấn riêng',
-            'Kệ sản phẩm khuyến mãi', 'Sản phẩm được xếp thành kim tự tháp', 'Sản phẩm cùng các thương hiệu nổi tiếng khác', 'Tủ thuốc có khóa', 'Nền là các hộp thuốc mờ ảo', 'Sản phẩm trên bàn tư vấn'
-        ])
-    },
-    {
-        id: 'product_luxury',
-        name: 'Bối Cảnh Sang Trọng',
-        icon: StarIcon,
-        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia tĩnh vật cho các thương hiệu xa xỉ, hãy tạo một hình ảnh 4K siêu thực, tinh xảo. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được đặt trong bối cảnh **{item}**. Bố cục tối giản, sang trọng, tập trung vào sản phẩm. **Ánh sáng**: Sử dụng ánh sáng studio có độ tương phản nhẹ, tạo bóng đổ mềm mại để làm nổi bật kết cấu và hình khối của sản phẩm. **Máy ảnh & Hậu kỳ**: Chụp bằng ống kính macro để lột tả từng chi tiết nhỏ nhất. Hậu kỳ với màu sắc sâu, tinh tế và độ nét hoàn hảo. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Toát lên vẻ đẳng cấp và độc quyền.", [
-            'Mặt đá cẩm thạch đen vân vàng', 'Nền lụa trắng mềm mại', 'Bệ trưng bày bằng kính', 'Bên cạnh chai rượu whisky', 'Trong hộp quà cao cấp',
-            'Trên bàn trang điểm lộng lẫy', 'Trong phòng tắm khách sạn 5 sao', 'Trên đàn piano màu đen bóng', 'Bên cạnh một chiếc đồng hồ Thụy Sĩ', 'Trên một cuốn sách bìa da',
-            'Flatlay với các phụ kiện vàng', 'Trên nền vải nhung đỏ', 'Trong một nội thất tối giản', 'Phản chiếu trên mặt nước tĩnh', 'Giữa những viên kim cương',
-            'Trên bệ bê tông được đánh bóng', 'Với ánh sáng ấn tượng (spotlight)', 'Bên cạnh một tác phẩm điêu khắc', 'Trong một chiếc xe hơi sang trọng', 'Trên bàn gỗ quý',
-            'Nền là kiến trúc tối giản', 'Trong một phòng trưng bày nghệ thuật', 'Bên cạnh dụng cụ pha chế cocktail', 'Trên một khay bạc', 'Với hiệu ứng khói mờ ảo',
-            'Trong một vali du lịch cổ điển', 'Trên nền kết cấu kim loại', 'Bên cạnh một cây bút máy', 'Giữa những cánh hoa hồng', 'Trên một chiếc du thuyền',
-            'Trong một căn penthouse có view thành phố', 'Bên cạnh hồ bơi vô cực', 'Trên một bậc thang xoắn ốc', 'Nền là một bức tường gạch thô', 'Với ánh sáng hoàng hôn ấm áp',
-            'Trong một thư viện tư nhân', 'Trên một lò sưởi bằng đá', 'Bên cạnh một bộ cờ vua', 'Trong một vườn thiền Nhật Bản', 'Trên một tấm da thuộc',
-            'Giữa các dụng cụ kaligrafi', 'Nền là bản đồ cổ', 'Bên cạnh các chai nước hoa', 'Trong một hầm rượu vang', 'Trên một khay đá phiến đen',
-            'Với hiệu ứng đổ bóng dài', 'Chụp ảnh macro chi tiết', 'Bên cạnh một chiếc máy ảnh film', 'Trong một hộp nhạc cổ', 'Trên một tấm gương', 'Với các hình khối hình học'
-        ])
-    },
-    {
-        id: 'product_nature',
-        name: 'Hòa mình Thiên Nhiên',
-        icon: LeafIcon,
-        styles: generateProductStyles("Với tư cách là một nhiếp ảnh gia sản phẩm chuyên về chủ đề tự nhiên, hãy tạo một hình ảnh 4K siêu thực, hài hòa. **Sản phẩm**: Sản phẩm trong ảnh tải lên. **Bối cảnh**: Sản phẩm được đặt một cách tự nhiên trên **{item}**. Bố cục nhấn mạnh sự kết nối giữa sản phẩm và thiên nhiên. **Ánh sáng**: Sử dụng ánh sáng tự nhiên, mềm mại, có thể là ánh nắng buổi sáng sớm hoặc chiều tà. **Máy ảnh & Hậu kỳ**: Chụp với khẩu độ mở lớn (ví dụ f/2.8) để tạo ra hậu cảnh mờ đẹp mắt. Màu sắc được chỉnh sửa theo tông màu đất, tự nhiên, trong trẻo. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, và nhãn hiệu của sản phẩm gốc. Hình ảnh phải truyền tải được sự tinh khiết và thân thiện với môi trường.", [
-            'Tảng đá phủ rêu trong rừng', 'Bãi cát trắng mịn của bãi biển', 'Một chiếc lá nhiệt đới lớn', 'Nền gỗ mộc mạc', 'Bề mặt băng giá',
-            'Đám sỏi cuội ở bờ suối', 'Một gốc cây cổ thụ', 'Cánh đồng hoa oải hương', 'Nền là những con sóng biển', 'Một vách đá nhìn ra biển',
-            'Giữa vườn thảo mộc xanh tươi', 'Trên một lớp tuyết mới rơi', 'Bên cạnh một dòng dung nham', 'Trong một hang động thạch nhũ', 'Trên một sa mạc cát',
-            'Giữa những quả thông trong rừng', 'Trên một cây cầu gỗ', 'Bên cạnh một thác nước', 'Trên một cánh đồng lúa chín', 'Lơ lửng giữa những đám mây',
-            'Trên một tảng băng trôi', 'Bên trong một bông hoa lớn', 'Trên một bãi cỏ đẫm sương', 'Giữa một rừng tre', 'Trên một bãi biển đá đen',
-            'Nền là bầu trời đầy sao', 'Bên cạnh một tổ chim', 'Trong một khu vườn Nhật Bản', 'Trên một đống lá mùa thu', 'Bên cạnh một cây xương rồng',
-            'Phản chiếu trong một vũng nước mưa', 'Trên một cánh đồng hoa hướng dương', 'Giữa những cây nấm phát sáng', 'Trên một rạn san hô', 'Bên trong một vỏ sò lớn',
-            'Nền là cực quang phương bắc', 'Trên một thân cây bạch dương', 'Giữa những cây dương xỉ', 'Trên một vách đá sa thạch', 'Bên cạnh một hồ nước trên núi',
-            'Giữa những dây leo chằng chịt', 'Trong một vườn cây ăn quả', 'Trên một bãi biển vỏ sò', 'Nền là một cơn bão ở xa', 'Bên cạnh một con suối nước nóng',
-            'Trong một cánh đồng chè xanh', 'Trên một tảng đá granite', 'Giữa những bông hoa sen', 'Bên cạnh một tổ ong', 'Trong một khu rừng bị cháy', 'Trên một cồn cát'
-        ])
-    }
-];
-
-const ALL_PRODUCT_STYLES: Style[] = PRODUCT_CATEGORIES.flatMap(category => category.styles);
 
 const baseCompositePrompt = "Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Ghép khuôn mặt của người trong ảnh gốc vào một bối cảnh mới của **{item}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên khuôn mặt của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
 
@@ -405,12 +322,52 @@ const TRENDING_STYLES: Style[] = [
     },
 ];
 
+const baseProductPrompt = "Với tư cách là một nhiếp ảnh gia quảng cáo và giám đốc sáng tạo, hãy tạo một hình ảnh 4K siêu thực, chất lượng cao và hấp dẫn cho sản phẩm. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết, logo và nhãn hiệu của sản phẩm từ ảnh gốc. **Bối cảnh & Ánh sáng**: {description}";
+
+const PRODUCT_STYLES: Style[] = [
+    // Studio
+    { id: 'prod_studio_white', name: 'Nền trắng tối giản', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên nền trắng hoàn hảo, vô cực. Sử dụng ánh sáng studio mềm mại, khuếch tán để loại bỏ bóng gắt, làm nổi bật chi tiết sản phẩm.') },
+    { id: 'prod_studio_dark', name: 'Nền đen huyền bí', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm nổi bật trên nền đen hoặc xám đậm. Sử dụng kỹ thuật chiếu sáng viền (rim light) để tạo ra một đường viền sáng tinh tế, nhấn mạnh hình khối của sản phẩm.') },
+    { id: 'prod_studio_color', name: 'Nền màu sắc năng động', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm trên một phông nền màu sắc rực rỡ (ví dụ: màu vàng, xanh dương, hồng). Ánh sáng mạnh, tương phản cao để tạo cảm giác vui tươi, năng động.') },
+    { id: 'prod_studio_gradient', name: 'Nền Gradient', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên một bối cảnh có hiệu ứng chuyển màu (gradient) mượt mà, tạo cảm giác hiện đại và tinh tế.') },
+    { id: 'prod_studio_floating', name: 'Sản phẩm bay lơ lửng', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được chụp như đang bay lơ lửng giữa không trung trên nền màu đơn sắc. Có thể thêm một bóng đổ mềm mại bên dưới để tạo cảm giác về không gian.') },
+    { id: 'prod_studio_geometric', name: 'Bục & Khối hình học', icon: ShoppingBagIcon, category: 'product', subCategory: 'studio', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được trưng bày trên các bục hoặc khối hình học (tròn, vuông, tam giác) cùng màu hoặc tương phản, tạo bố cục kiến trúc và hiện đại.') },
+    // Thiên nhiên
+    { id: 'prod_nature_stream', name: 'Bên bờ suối', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm đặt trên một tảng đá phủ rêu xanh mát bên cạnh một dòng suối trong vắt đang chảy. Ánh nắng nhẹ nhàng xuyên qua tán lá cây.') },
+    { id: 'prod_nature_beach', name: 'Bãi biển nhiệt đới', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm nằm trên bãi cát trắng mịn, phía sau là làn nước biển trong xanh và những con sóng nhỏ. Chụp vào giờ vàng để có ánh sáng ấm áp.') },
+    { id: 'prod_nature_forest', name: 'Trong rừng sâu', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên một gốc cây cổ thụ hoặc giữa thảm lá cây trong một khu rừng xanh tươi. Ánh sáng tự nhiên tạo ra những vệt nắng đẹp mắt.') },
+    { id: 'prod_nature_mountain', name: 'Đỉnh núi hùng vĩ', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm đứng vững trên một mỏm đá, nhìn ra quang cảnh núi non hùng vĩ và bầu trời trong xanh.') },
+    { id: 'prod_nature_flowers', name: 'Giữa vườn hoa', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được bao quanh bởi những bông hoa đầy màu sắc đang nở rộ, tạo cảm giác tươi mới và lãng mạn.') },
+    { id: 'prod_nature_ice', name: 'Trên băng tuyết', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên một tảng băng trong suốt hoặc nền tuyết trắng xóa, gợi cảm giác mát lạnh và tinh khiết.') },
+    { id: 'prod_nature_desert', name: 'Hoang mạc cát', icon: ShoppingBagIcon, category: 'product', subCategory: 'nature', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm trên cồn cát vàng của hoang mạc, dưới ánh nắng chói chang, tạo nên hình ảnh mạnh mẽ và ấn tượng.') },
+    // Phong cách sống
+    { id: 'prod_lifestyle_model', name: 'Người mẫu sử dụng', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Một người mẫu đang vui vẻ tương tác hoặc sử dụng sản phẩm trong một bối cảnh đời thường (ví dụ: trong nhà, ngoài quán cà phê). Tập trung vào biểu cảm và sự kết nối với sản phẩm.') },
+    { id: 'prod_lifestyle_hand', name: 'Cầm trên tay', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Ảnh chụp cận cảnh một bàn tay đẹp, sạch sẽ đang cầm, mở hoặc sử dụng sản phẩm một cách tinh tế.') },
+    { id: 'prod_lifestyle_home', name: 'Bối cảnh tại nhà', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt một cách tự nhiên trong một ngôi nhà hiện đại, có thể trên bàn khách, kệ sách hoặc bàn trang điểm.') },
+    { id: 'prod_lifestyle_cafe', name: 'Tại quán cafe', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm đặt trên bàn gỗ của một quán cà phê ấm cúng, bên cạnh một tách cappuccino và một cuốn sách.') },
+    { id: 'prod_lifestyle_flatlay', name: 'Chụp flatlay', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được sắp xếp một cách nghệ thuật trên một mặt phẳng cùng với các phụ kiện liên quan, chụp từ trên xuống.') },
+    { id: 'prod_lifestyle_workspace', name: 'Trên bàn làm việc', icon: ShoppingBagIcon, category: 'product', subCategory: 'lifestyle', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên một bàn làm việc gọn gàng, bên cạnh laptop, sổ tay và cây cảnh nhỏ.') },
+    // Bối cảnh Việt Nam
+    { id: 'prod_vn_pharmacy', name: 'Tại nhà thuốc', icon: ShoppingBagIcon, category: 'product', subCategory: 'vietnam', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được trưng bày trên kệ kính sạch sẽ của một nhà thuốc hiện đại ở Việt Nam (phong cách Pharmacity, Long Châu). Ánh sáng trắng, rõ ràng.') },
+    { id: 'prod_vn_coffee', name: 'Quán cafe Sài Gòn', icon: ShoppingBagIcon, category: 'product', subCategory: 'vietnam', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm trên bàn của một quán cà phê cóc vỉa hè đặc trưng của Sài Gòn, với phin cà phê và ly trà đá.') },
+    { id: 'prod_vn_hanoi', name: 'Góc phố cổ Hà Nội', icon: ShoppingBagIcon, category: 'product', subCategory: 'vietnam', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên một bệ cửa sổ cũ, nhìn ra một con phố cổ Hà Nội với những bức tường vàng và mái ngói rêu phong.') },
+    { id: 'prod_vn_tet', name: 'Không khí Tết', icon: ShoppingBagIcon, category: 'product', subCategory: 'vietnam', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt bên cạnh cành hoa đào, bánh chưng hoặc khay mứt Tết, trong không khí ấm cúng của ngày Tết Nguyên Đán.') },
+    { id: 'prod_vn_halong', name: 'Cảnh Vịnh Hạ Long', icon: ShoppingBagIcon, category: 'product', subCategory: 'vietnam', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm trên mạn một chiếc du thuyền, phía sau là khung cảnh kỳ vĩ của Vịnh Hạ Long với những hòn đảo đá vôi đặc trưng.') },
+    // Sáng tạo & Trừu tượng
+    { id: 'prod_creative_water', name: 'Tung tóe trong nước', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm đang chìm hoặc nổi lên từ một làn nước trong vắt, tạo ra những gợn sóng và tia nước đẹp mắt. Chụp với tốc độ cao để bắt trọn khoảnh khắc.') },
+    { id: 'prod_creative_smoke', name: 'Khói màu huyền ảo', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được bao quanh bởi những làn khói màu sắc huyền ảo, tạo cảm giác bí ẩn và nghệ thuật.') },
+    { id: 'prod_creative_reflection', name: 'Phản chiếu mặt gương', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm và hình ảnh phản chiếu của nó trên một bề mặt gương hoặc mặt nước tĩnh lặng.') },
+    { id: 'prod_creative_light', name: 'Vẽ bằng ánh sáng', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Chụp phơi sáng dài với các vệt sáng (light painting) uốn lượn xung quanh sản phẩm trong một không gian tối.') },
+    { id: 'prod_creative_ingredients', name: 'Cùng với thành phần', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt cạnh các thành phần tự nhiên chính tạo nên nó (ví dụ: mỹ phẩm với hoa, trái cây; thực phẩm với nguyên liệu tươi).') },
+    { id: 'prod_creative_texture', name: 'Trên nền chất liệu', icon: ShoppingBagIcon, category: 'product', subCategory: 'creative', prompt: baseProductPrompt.replace('{description}', 'Sản phẩm được đặt trên các bề mặt có kết cấu độc đáo như vải lụa, đá cẩm thạch, gỗ thô, hoặc kim loại.') },
+];
+
 
 export const STYLES: Style[] = [
     ...TRENDING_STYLES,
     ...REGULAR_STYLES, 
+    ...PRODUCT_STYLES,
     ...WEDDING_STYLES,
-    ...ALL_PRODUCT_STYLES,
     ...CELEBRITY_STYLES, 
     ...TRAVEL_STYLES, 
     ...PANORAMA_STYLES
@@ -512,3 +469,23 @@ export const BASE_ACCESSORY_DEFAULTS: Partial<Record<string, Accessory>> = {
     outfit: { item: 'Áo thun', color: 'trắng' },
     footwear: { item: 'Giày thể thao (sneakers)', color: 'trắng' },
 };
+
+
+// Constants for ID Photo Generation
+export const ID_PHOTO_SIZES: IdPhotoSize[] = [
+    { id: '3x4', name: '3x4 cm' },
+    { id: '4x6', name: '4x6 cm' },
+    { id: 'passport', name: 'Hộ chiếu (4x6 nền trắng)' },
+];
+
+export const ID_PHOTO_BACKGROUNDS: IdPhotoBackground[] = [
+    { id: 'white', name: 'Trắng', className: 'bg-white' },
+    { id: 'blue', name: 'Xanh', className: 'bg-blue-500' },
+    { id: 'gray', name: 'Xám', className: 'bg-gray-400' },
+];
+
+export const ID_PHOTO_ATTIRES: IdPhotoAttire[] = [
+    { id: 'keep', name: 'Giữ nguyên', prompt: 'Giữ nguyên trang phục gốc của người trong ảnh.' },
+    { id: 'shirt', name: 'Áo sơ mi trắng', prompt: 'Thay thế trang phục của người trong ảnh bằng một chiếc áo sơ mi trắng công sở, có cổ.' },
+    { id: 'suit', name: 'Áo vest & Sơ mi', prompt: 'Thay thế trang phục của người trong ảnh bằng một bộ vest công sở màu tối, áo sơ mi trắng và cà vạt (nếu là nam).' },
+];

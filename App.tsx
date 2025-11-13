@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -28,8 +25,8 @@ import { UsageGuide } from './components/UsageGuide';
 
 
 // Constants and Types
-import { STYLES, IMAGE_TYPES, STYLE_ACCESSORY_DEFAULTS, BASE_ACCESSORY_DEFAULTS } from './constants';
-import type { Style, ImageType, Accessory } from './types';
+import { STYLES, IMAGE_TYPES, STYLE_ACCESSORY_DEFAULTS, BASE_ACCESSORY_DEFAULTS, ID_PHOTO_BACKGROUNDS, ID_PHOTO_ATTIRES, ID_PHOTO_SIZES } from './constants';
+import type { Style, ImageType, Accessory, IdPhotoAttire, IdPhotoBackground, IdPhotoSize } from './types';
 
 // Helper to convert File to a base64 string for the API
 const fileToGenerativePart = async (file: File) => {
@@ -67,17 +64,15 @@ function App() {
   const [ai, setAi] = useState<GoogleGenAI | null>(null);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
+  const [hasSelectedVeoKey, setHasSelectedVeoKey] = useState(false);
 
   // UI State
   const [showGuide, setShowGuide] = useState(false);
-
 
   // State management
   const [mode, setMode] = useState<'single' | 'group'>('single');
   const [sourceImages, setSourceImages] = useState<File[]>([]);
   const [coupleSourceImages, setCoupleSourceImages] = useState<(File|null)[]>([null, null]);
-  const [productSourceImage, setProductSourceImage] = useState<File | null>(null);
-
 
   const [previews, setPreviews] = useState<string[]>([]);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
@@ -89,10 +84,10 @@ function App() {
   
   // Custom prompts per tab
   const [stylePrompt, setStylePrompt] = useState('');
-  const [productPrompt, setProductPrompt] = useState('');
   const [celebrityPrompt, setCelebrityPrompt] = useState('');
   const [travelPrompt, setTravelPrompt] = useState('');
   const [panoramaPrompt, setPanoramaPrompt] = useState('');
+  const [productPrompt, setProductPrompt] = useState('');
 
   const [isAccessoryEnabled, setIsAccessoryEnabled] = useState(false);
   const [accessories, setAccessories] = useState<Record<string, Accessory>>({});
@@ -102,6 +97,17 @@ function App() {
   const [selectedAspectRatio, setSelectedAspectRatio] = useState('square');
   const [customWidth, setCustomWidth] = useState<number | ''>(1024);
   const [customHeight, setCustomHeight] = useState<number | ''>(1024);
+  
+  // ID Photo State
+  const [idPhotoSize, setIdPhotoSize] = useState<IdPhotoSize>(ID_PHOTO_SIZES[0]);
+  const [idPhotoBackground, setIdPhotoBackground] = useState<IdPhotoBackground>(ID_PHOTO_BACKGROUNDS[0]);
+  const [idPhotoAttire, setIdPhotoAttire] = useState<IdPhotoAttire>(ID_PHOTO_ATTIRES[0]);
+
+  // Video Generation State
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -179,6 +185,17 @@ function App() {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   }, []);
+  
+  useEffect(() => {
+    if (userProfile && (window as any).aistudio) {
+        const checkKey = async () => {
+            if (await (window as any).aistudio.hasSelectedApiKey()) {
+                setHasSelectedVeoKey(true);
+            }
+        };
+        checkKey();
+    }
+  }, [userProfile]);
 
   // New function for handling fresh key submission with verification
   const handleApiKeySubmit = useCallback(async (apiKey: string, remember: boolean) => {
@@ -293,9 +310,7 @@ function App() {
   // Effect to generate previews when source images change
   useEffect(() => {
     const filesToPreview = (
-        activeTab === 'wedding' ? coupleSourceImages.filter(Boolean) :
-        activeTab === 'product' ? (productSourceImage ? [productSourceImage] : []) :
-        sourceImages
+        activeTab === 'wedding' ? coupleSourceImages.filter(Boolean) : sourceImages
     ) as File[];
 
 
@@ -316,7 +331,7 @@ function App() {
             setGeneratedImages([]);
         }
     }
-  }, [sourceImages, coupleSourceImages, productSourceImage, activeTab]);
+  }, [sourceImages, coupleSourceImages, activeTab]);
 
 
   // Handle image upload and preview for single/group modes
@@ -334,13 +349,6 @@ function App() {
             return newCoupleImages;
         });
     }, []);
-    
-    const handleProductImageChange = useCallback((file: File | null) => {
-        setProductSourceImage(file);
-        if (!file) {
-            setGeneratedImages([]);
-        }
-    }, []);
 
   // Handle accessory changes
   const handleAccessoryChange = useCallback((category: string, field: 'item' | 'color', value: string) => {
@@ -355,17 +363,15 @@ function App() {
   
   const currentSourceImages = useMemo(() => {
     if (activeTab === 'wedding') return coupleSourceImages.filter(Boolean) as File[];
-    if (activeTab === 'product') return productSourceImage ? [productSourceImage] : [];
     return sourceImages;
-  }, [activeTab, coupleSourceImages, sourceImages, productSourceImage]);
+  }, [activeTab, coupleSourceImages, sourceImages]);
   
   // Determine if ready to generate
   const isReady = useMemo(() => {
     const weddingReady = activeTab === 'wedding' && coupleSourceImages.every(img => img !== null);
-    const productReady = activeTab === 'product' && productSourceImage !== null && (productPrompt || selectedStyle.category === 'product');
-    const otherReady = activeTab !== 'wedding' && activeTab !== 'product' && sourceImages.length > 0;
-    return (weddingReady || productReady || otherReady) && !!ai;
-  }, [sourceImages, coupleSourceImages, productSourceImage, activeTab, ai, productPrompt, selectedStyle]);
+    const otherReady = activeTab !== 'wedding' && sourceImages.length > 0;
+    return (weddingReady || otherReady) && !!ai;
+  }, [sourceImages, coupleSourceImages, activeTab, ai]);
 
   const disabledTooltip = useMemo(() => {
       if (isReady) return '';
@@ -373,44 +379,56 @@ function App() {
       if (activeTab === 'wedding' && !coupleSourceImages.every(img => img !== null)) {
           return 'Vui lòng tải lên đủ hai ảnh cho cặp đôi.';
       }
-      if (activeTab === 'product' && !productSourceImage) {
-          return 'Vui lòng tải lên ảnh sản phẩm.';
-      }
-      if (activeTab === 'product' && !productPrompt && selectedStyle.category !== 'product') {
-          return 'Vui lòng nhập mô tả hoặc chọn một bối cảnh cho sản phẩm.';
-      }
-      if (activeTab !== 'wedding' && activeTab !== 'product' && sourceImages.length === 0) {
+      if (activeTab !== 'wedding' && sourceImages.length === 0) {
           return 'Vui lòng tải lên ít nhất một ảnh gốc.';
       }
       return 'Vui lòng hoàn thành các bước trên để bắt đầu.'; // A generic fallback
-  }, [isReady, ai, activeTab, coupleSourceImages, productSourceImage, sourceImages, productPrompt, selectedStyle]);
+  }, [isReady, ai, activeTab, coupleSourceImages, sourceImages]);
 
   // Construct the final prompt for the API
   const constructPrompt = useCallback((): string => {
     let coreContent = '';
     
-    if (activeTab === 'product') {
-        const productContext = productPrompt || selectedStyle.prompt;
-        // The detailed prompt is now built into the style itself
-        coreContent = productContext;
-    } else if (activeTab === 'wedding') {
-        // The detailed prompt is now built into the style itself
+    if (activeTab === 'id_photo') {
+        coreContent = `**Nhiệm vụ**: Tạo một ảnh thẻ chuyên nghiệp, chất lượng studio từ ảnh gốc. **Yêu cầu nghiêm ngặt**:
+        1.  **Phông nền**: Phải là một màu ${idPhotoBackground.name} đồng nhất, phẳng và không có chi tiết.
+        2.  **Trang phục**: ${idPhotoAttire.prompt}. Đảm bảo sự chuyển đổi ở cổ và vai liền mạch, tự nhiên.
+        3.  **Tư thế & Biểu cảm**: Người trong ảnh phải nhìn thẳng vào máy ảnh, biểu cảm trung tính, chuyên nghiệp.
+        4.  **Ánh sáng**: Ánh sáng studio mềm mại, không có bóng gắt trên khuôn mặt.
+        5.  **Bảo toàn khuôn mặt**: TUYỆT ĐỐI giữ nguyên 100% các đặc điểm khuôn mặt, tóc, màu da của người trong ảnh gốc. Không được thay đổi hay làm đẹp khuôn mặt.
+        6.  **Bố cục**: Cắt ảnh theo bố cục ảnh thẻ tiêu chuẩn, thấy rõ khuôn mặt và vai. Kích thước theo tỷ lệ ${idPhotoSize.name}.`;
+        return coreContent;
+    }
+
+    if (activeTab === 'wedding') {
         coreContent = selectedStyle.prompt;
-    } else if (activeTab === 'style' && stylePrompt) {
-        // For custom prompts, we prepend the expert persona
-        coreContent = `Với tư cách là một đạo diễn nghệ thuật bậc thầy, hãy tạo ra một hình ảnh 4K siêu thực, chất lượng cao theo phong cách sau: ${stylePrompt}.`;
-    } else if (activeTab === 'celebrity' && celebrityPrompt) {
-        // Use a generic but powerful base prompt for custom celebrity inputs
-        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Ghép khuôn mặt của người trong ảnh gốc vào một bối cảnh mới của **${celebrityPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên khuôn mặt của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
-    } else if (activeTab === 'travel' && travelPrompt) {
-        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đưa người trong ảnh gốc đến du lịch tại **${travelPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
-    } else if (activeTab === 'panorama' && panoramaPrompt) {
-        coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đặt người trong ảnh gốc vào bối cảnh toàn cảnh của **${panoramaPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
+    } else if (['style', 'celebrity', 'travel', 'panorama', 'product'].includes(activeTab)) {
+        let customPrompt = '';
+        switch (activeTab) {
+            case 'style': customPrompt = stylePrompt; break;
+            case 'celebrity': customPrompt = celebrityPrompt; break;
+            case 'travel': customPrompt = travelPrompt; break;
+            case 'panorama': customPrompt = panoramaPrompt; break;
+            case 'product': customPrompt = productPrompt; break;
+        }
+
+        if (customPrompt) {
+            // Logic for custom prompts with expert personas
+            if (activeTab === 'style') {
+                coreContent = `Với tư cách là một đạo diễn nghệ thuật bậc thầy, hãy tạo ra một hình ảnh 4K siêu thực, chất lượng cao theo phong cách sau: ${customPrompt}.`;
+            } else if (activeTab === 'product') {
+                coreContent = `Với tư cách là một giám đốc sáng tạo quảng cáo, hãy tạo ra một hình ảnh sản phẩm 4K siêu thực, hấp dẫn. **Nhiệm vụ**: Đặt sản phẩm trong ảnh gốc vào bối cảnh sau: **${customPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, và phản chiếu trên sản phẩm phải khớp một cách hoàn hảo với môi trường xung quanh. **Yêu cầu cốt lõi**: Giữ nguyên hình dạng, chi tiết và nhãn hiệu của sản phẩm.`;
+            } else { // Celebrity, Travel, Panorama
+                 coreContent = `Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đặt người trong ảnh gốc vào bối cảnh của **${customPrompt}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.`;
+            }
+        } else {
+            coreContent = selectedStyle.prompt;
+        }
     } else {
         coreContent = selectedStyle.prompt;
     }
 
-    if (activeTab !== 'product' && activeTab !== 'wedding' && mode === 'single' && isAccessoryEnabled) {
+    if (activeTab !== 'wedding' && activeTab !== 'product' && activeTab !== 'id_photo' && mode === 'single' && isAccessoryEnabled) {
         const accessoryDescriptions = Object.values(accessories)
             .filter(acc => acc && (acc as Accessory).item)
             .map(acc => `${(acc as Accessory).color} ${(acc as Accessory).item}`.trim())
@@ -421,13 +439,12 @@ function App() {
         }
     }
 
-    // Append instructions for group mode
-     if (mode === 'group' && activeTab !== 'wedding' && activeTab !== 'product') {
+    if (mode === 'group' && !['wedding', 'product', 'id_photo'].includes(activeTab)) {
         coreContent += " **Yêu cầu cho ảnh nhóm**: Tạo một hình ảnh duy nhất có tất cả những người từ các bức ảnh đã tải lên trong một bối cảnh liền mạch. Giữ nguyên các đặc điểm khuôn mặt và ngoại hình của mỗi người từ ảnh gốc tương ứng của họ."
     }
-
-    // Add image type instructions (portrait, half_body, full_body)
-    if (activeTab !== 'product') {
+    
+    // Image type and aspect ratio instructions (not for ID photos)
+    if (activeTab !== 'id_photo') {
         if (selectedImageType.id === 'portrait') {
             coreContent += " **Bố cục**: Ảnh chụp là một bức chân dung cận cảnh, tập trung vào khuôn mặt và vai.";
         } else if (selectedImageType.id === 'half_body') {
@@ -435,22 +452,21 @@ function App() {
         } else {
             coreContent += " **Bố cục**: Ảnh chụp toàn thân, thấy rõ cả người và trang phục.";
         }
-    }
-    
-    // Add aspect ratio and custom size instructions to the prompt
-    if (selectedAspectRatio === 'custom' && customWidth && customHeight) {
-        coreContent += ` **Kích thước**: Kích thước ảnh phải là ${customWidth}x${customHeight} pixels.`;
-    } else if (selectedAspectRatio === 'portrait') {
-        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình dọc (ví dụ 9:16).";
-    } else if (selectedAspectRatio === 'landscape') {
-        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình ngang (ví dụ 16:9).";
-    } else { // default to square
-        coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình vuông (1:1).";
+
+        if (selectedAspectRatio === 'custom' && customWidth && customHeight) {
+            coreContent += ` **Kích thước**: Kích thước ảnh phải là ${customWidth}x${customHeight} pixels.`;
+        } else if (selectedAspectRatio === 'portrait') {
+            coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình dọc (ví dụ 9:16).";
+        } else if (selectedAspectRatio === 'landscape') {
+            coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình ngang (ví dụ 16:9).";
+        } else { // default to square
+            coreContent += " **Tỷ lệ**: Ảnh phải có tỷ lệ khung hình vuông (1:1).";
+        }
     }
 
     return coreContent;
 
-}, [selectedStyle, selectedImageType, accessories, isAccessoryEnabled, activeTab, stylePrompt, celebrityPrompt, travelPrompt, panoramaPrompt, productPrompt, mode, selectedAspectRatio, customWidth, customHeight]);
+}, [selectedStyle, selectedImageType, accessories, isAccessoryEnabled, activeTab, stylePrompt, celebrityPrompt, travelPrompt, panoramaPrompt, productPrompt, mode, selectedAspectRatio, customWidth, customHeight, idPhotoSize, idPhotoBackground, idPhotoAttire]);
 
   const handleGenerate = useCallback(async () => {
     if (!ai) {
@@ -469,6 +485,8 @@ function App() {
     setIsLoading(true);
     setError(null);
     setGeneratedImages(Array(numberOfImages).fill('loading'));
+    setGeneratedVideoUrl(null); // Clear previous video
+    setVideoError(null);
 
     try {
       const prompt = constructPrompt();
@@ -478,12 +496,11 @@ function App() {
       const contents = {
         parts: [...imageParts, { text: prompt }],
       };
-
+      
       const generateImage = () => ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents,
         config: {
-            // FIX: The `responseModalities` array must only contain a single `Modality.IMAGE` element. `Modality.TEXT` is not a valid or necessary value here.
             responseModalities: [Modality.IMAGE],
         },
       });
@@ -524,6 +541,90 @@ function App() {
       setIsLoading(false);
     }
   }, [ai, currentSourceImages, constructPrompt, numberOfImages, activeTab, setApiKeyError]);
+  
+  const handleGenerateVideo = useCallback(async (imageIndex: number) => {
+    const sourceImage = generatedImages[imageIndex];
+    if (!sourceImage) {
+        setVideoError("Ảnh nguồn để tạo video không tồn tại.");
+        return;
+    }
+
+    setIsVideoLoading(true);
+    setVideoError(null);
+    setGeneratedVideoUrl(null);
+
+    const loadingMessages = [
+        "AI đang đọc kịch bản...",
+        "Chuẩn bị máy quay và ánh sáng...",
+        "Bắt đầu cảnh quay đầu tiên...",
+        "AI đang chỉ đạo diễn xuất...",
+        "Thêm hiệu ứng đặc biệt...",
+        "Dựng phim và xử lý hậu kỳ...",
+        "Sắp có bản final cut, vui lòng chờ...",
+    ];
+
+    let messageIndex = 0;
+    setVideoLoadingMessage(loadingMessages[messageIndex]);
+    const messageInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % loadingMessages.length;
+        setVideoLoadingMessage(loadingMessages[messageIndex]);
+    }, 5000);
+
+    try {
+        if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
+            await (window as any).aistudio.openSelectKey();
+            setHasSelectedVeoKey(true);
+        }
+
+        const videoAi = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        
+        const base64Image = sourceImage.split(',')[1];
+        const videoPrompt = `Tạo một video quảng cáo ngắn (khoảng 5-7 giây) cho sản phẩm trong ảnh. Video cần có chuyển động mượt mà, chuyên nghiệp, có thể là máy quay lia chậm quanh sản phẩm, hoặc zoom vào các chi tiết nổi bật. Giữ nguyên bối cảnh và phong cách của ảnh.`;
+        
+        let operation = await videoAi.models.generateVideos({
+            model: 'veo-3.1-fast-generate-preview',
+            prompt: videoPrompt,
+            image: {
+                imageBytes: base64Image,
+                mimeType: 'image/png',
+            },
+            config: {
+                numberOfVideos: 1,
+                resolution: '720p',
+                aspectRatio: '16:9'
+            }
+        });
+
+        while (!operation.done) {
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            operation = await videoAi.operations.getVideosOperation({ operation: operation });
+        }
+
+        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (downloadLink) {
+             const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+             const videoBlob = await response.blob();
+             const videoUrl = URL.createObjectURL(videoBlob);
+             setGeneratedVideoUrl(videoUrl);
+        } else {
+             throw new Error("Không nhận được link video từ API.");
+        }
+
+    } catch (e: any) {
+        console.error("Video generation failed:", e);
+        const errorMessage = e?.message?.toLowerCase() || '';
+        if (errorMessage.includes("requested entity was not found")) {
+            setVideoError("API Key không hợp lệ cho việc tạo video. Vui lòng chọn lại Key và thử lại.");
+            setHasSelectedVeoKey(false);
+        } else {
+             setVideoError("Tạo video thất bại. Vui lòng thử lại sau.");
+        }
+    } finally {
+        setIsVideoLoading(false);
+        clearInterval(messageInterval);
+        setVideoLoadingMessage('');
+    }
+  }, [generatedImages]);
 
   const handleTabChange = useCallback((tabId: string) => {
       setActiveTab(tabId);
@@ -533,14 +634,15 @@ function App() {
       }
       // Reset states on tab change for a clean slate
       setStylePrompt('');
-      setProductPrompt('');
       setCelebrityPrompt('');
       setTravelPrompt('');
       setPanoramaPrompt('');
+      setProductPrompt('');
       setSourceImages([]);
       setCoupleSourceImages([null, null]);
-      setProductSourceImage(null);
       setGeneratedImages([]);
+      setGeneratedVideoUrl(null);
+      setVideoError(null);
   }, []);
 
   const openViewer = useCallback((index: number) => setViewerIndex(index), []);
@@ -571,6 +673,17 @@ function App() {
     });
 
   }, [coupleSourceImages, previews]);
+  
+  const uploaderLabel = useMemo(() => {
+    switch(activeTab) {
+        case 'product':
+            return 'Bước 1: Tải Ảnh Sản Phẩm';
+        case 'id_photo':
+            return 'Bước 1: Tải Ảnh Chân Dung';
+        default:
+            return 'Bước 1: Tải Ảnh Gốc';
+    }
+  }, [activeTab]);
 
   if (isAuthLoading) {
     return (
@@ -642,7 +755,7 @@ function App() {
 
         {showGuide && <UsageGuide onDismiss={handleDismissGuide} />}
         
-        {activeTab !== 'wedding' && activeTab !== 'product' && (
+        {activeTab !== 'wedding' && activeTab !== 'product' && activeTab !== 'id_photo' && (
             <div className="flex justify-center mb-8">
                 <div className="p-1 bg-slate-900 rounded-lg flex space-x-2 shadow-lg">
                     <button 
@@ -679,15 +792,9 @@ function App() {
                             onImageChange={handleCoupleImageChange}
                             previews={[previews[0], coupleSourceImages[0] && coupleSourceImages[1] ? previews[1] : undefined]}
                         />
-                    ) : activeTab === 'product' ? (
+                    ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
                         <ImageUploader 
-                            label="Bước 1: Tải Ảnh Gốc"
-                            onImagesChange={(files) => handleProductImageChange(files[0] || null)} 
-                            preview={previews[0]} 
-                        />
-                    ) : mode === 'single' ? (
-                        <ImageUploader 
-                            label="Bước 1: Tải Ảnh Gốc"
+                            label={uploaderLabel}
                             onImagesChange={handleImagesChange} 
                             preview={previews[0]} 
                         />
@@ -711,16 +818,16 @@ function App() {
                             onStyleSelect={setSelectedStyle}
                             stylePrompt={stylePrompt}
                             onStylePromptChange={setStylePrompt}
-                            productPrompt={productPrompt}
-                            onProductPromptChange={setProductPrompt}
                             celebrityPrompt={celebrityPrompt}
                             onCelebrityPromptChange={setCelebrityPrompt}
                             travelPrompt={travelPrompt}
                             onTravelPromptChange={setTravelPrompt}
                             panoramaPrompt={panoramaPrompt}
                             onPanoramaPromptChange={setPanoramaPrompt}
+                            productPrompt={productPrompt}
+                            onProductPromptChange={setProductPrompt}
                         />
-                        {mode === 'single' && activeTab !== 'wedding' && activeTab !== 'product' && (
+                        {mode === 'single' && !['wedding', 'product', 'id_photo'].includes(activeTab) && (
                             <AccessorySelector 
                                 accessories={accessories}
                                 onAccessoryChange={handleAccessoryChange}
@@ -736,6 +843,7 @@ function App() {
             <div>
                  <Panel>
                     <GenerationControls 
+                        activeTab={activeTab}
                         selectedImageType={selectedImageType}
                         onImageTypeChange={setSelectedImageType}
                         onGenerate={handleGenerate}
@@ -750,7 +858,12 @@ function App() {
                         onCustomWidthChange={setCustomWidth}
                         customHeight={customHeight}
                         onCustomHeightChange={setCustomHeight}
-                        isProductMode={activeTab === 'product'}
+                        idPhotoSize={idPhotoSize}
+                        onIdPhotoSizeChange={setIdPhotoSize}
+                        idPhotoBackground={idPhotoBackground}
+                        onIdPhotoBackgroundChange={setIdPhotoBackground}
+                        idPhotoAttire={idPhotoAttire}
+                        onIdPhotoAttireChange={setIdPhotoAttire}
                     />
                 </Panel>
             </div>
@@ -758,11 +871,46 @@ function App() {
             {/* Results */}
             <div>
                 <GeneratedImages 
+                  activeTab={activeTab}
                   images={generatedImages} 
                   isLoading={isLoading}
                   onImageClick={openViewer}
+                  onGenerateVideo={handleGenerateVideo}
+                  isVideoLoading={isVideoLoading}
+                  hasSelectedVeoKey={hasSelectedVeoKey}
+                  onSelectVeoKey={() => (window as any).aistudio?.openSelectKey()}
                 />
             </div>
+            
+            {/* Video Results */}
+            {(isVideoLoading || generatedVideoUrl || videoError) && (
+                <div className="mt-8">
+                    <Panel>
+                        <h2 className="text-lg font-bold text-slate-200 mb-4 text-left">Video Quảng Cáo</h2>
+                        {isVideoLoading && (
+                            <div className="flex flex-col items-center justify-center h-60 bg-slate-800 rounded-lg text-center">
+                                 <svg className="animate-spin h-8 w-8 text-emerald-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p className="text-lg font-semibold text-white">Đang tạo video của bạn...</p>
+                                <p className="text-slate-400 mt-2">{videoLoadingMessage}</p>
+                                <p className="text-xs text-slate-500 mt-4">(Quá trình này có thể mất vài phút)</p>
+                            </div>
+                        )}
+                        {videoError && (
+                            <div className="flex items-center justify-center h-60 bg-red-900/30 rounded-lg text-red-300 text-center p-4">
+                                {videoError}
+                            </div>
+                        )}
+                        {generatedVideoUrl && (
+                             <div className="aspect-video bg-black rounded-lg">
+                                <video src={generatedVideoUrl} controls autoPlay className="w-full h-full rounded-lg" />
+                            </div>
+                        )}
+                    </Panel>
+                </div>
+            )}
         </div>
       </main>
 

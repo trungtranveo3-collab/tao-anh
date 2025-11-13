@@ -1,10 +1,10 @@
-
 import React from 'react';
-import type { ImageType, AspectRatio } from '../types';
-import { IMAGE_TYPES, ASPECT_RATIOS } from '../constants';
+import type { ImageType, AspectRatio, IdPhotoSize, IdPhotoBackground, IdPhotoAttire } from '../types';
+import { IMAGE_TYPES, ASPECT_RATIOS, ID_PHOTO_SIZES, ID_PHOTO_BACKGROUNDS, ID_PHOTO_ATTIRES } from '../constants';
 // Removed Panel import as it's now handled by the parent in App.tsx
 
 interface GenerationControlsProps {
+    activeTab: string;
     selectedImageType: ImageType;
     onImageTypeChange: (imageType: ImageType) => void;
     onGenerate: () => void;
@@ -19,7 +19,12 @@ interface GenerationControlsProps {
     onCustomWidthChange: (width: number | '') => void;
     customHeight: number | '';
     onCustomHeightChange: (height: number | '') => void;
-    isProductMode?: boolean;
+    idPhotoSize: IdPhotoSize;
+    onIdPhotoSizeChange: (size: IdPhotoSize) => void;
+    idPhotoBackground: IdPhotoBackground;
+    onIdPhotoBackgroundChange: (background: IdPhotoBackground) => void;
+    idPhotoAttire: IdPhotoAttire;
+    onIdPhotoAttireChange: (attire: IdPhotoAttire) => void;
 }
 
 const MagicWandIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
@@ -30,6 +35,7 @@ const MagicWandIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5'
 
 
 export const GenerationControls: React.FC<GenerationControlsProps> = ({ 
+    activeTab,
     selectedImageType, 
     onImageTypeChange, 
     onGenerate, 
@@ -44,9 +50,15 @@ export const GenerationControls: React.FC<GenerationControlsProps> = ({
     onCustomWidthChange,
     customHeight,
     onCustomHeightChange,
-    isProductMode = false
+    idPhotoSize,
+    onIdPhotoSizeChange,
+    idPhotoBackground,
+    onIdPhotoBackgroundChange,
+    idPhotoAttire,
+    onIdPhotoAttireChange,
 }) => {
     const isCustomSizeEnabled = selectedAspectRatio === 'custom';
+    const isIdPhotoTab = activeTab === 'id_photo';
     
     const handleToggleCustomSize = (e: React.ChangeEvent<HTMLInputElement>) => {
         onAspectRatioChange(e.target.checked ? 'custom' : 'square');
@@ -65,91 +77,142 @@ export const GenerationControls: React.FC<GenerationControlsProps> = ({
         <div className="flex flex-col space-y-6">
              <div>
                 <h2 className="text-lg font-bold text-slate-200">Bước 3: Hoàn Thiện & Tạo Ảnh</h2>
-                <p className="text-slate-400 text-sm mt-1">Chọn loại ảnh, kích thước, số lượng và bắt đầu sáng tạo</p>
+                <p className="text-slate-400 text-sm mt-1">
+                    {isIdPhotoTab 
+                        ? "Chọn kích thước, phông nền, trang phục và bắt đầu"
+                        : "Chọn loại ảnh, kích thước, số lượng và bắt đầu sáng tạo"
+                    }
+                </p>
             </div>
-
-            {!isProductMode && (
-                <div className="grid grid-cols-3 gap-3">
-                    {IMAGE_TYPES.map(type => {
-                        const isSelected = selectedImageType.id === type.id;
-                        return (
-                            <button
-                                key={type.id}
-                                onClick={() => onImageTypeChange(type)}
-                                className={`flex flex-col items-center justify-center text-center p-3 space-y-2 bg-slate-800 rounded-lg h-28 transition-all duration-200 transform hover:bg-slate-700 ring-2 ${
+            
+            {isIdPhotoTab ? (
+                <div className="space-y-4">
+                    {/* ID Photo Size */}
+                    <div>
+                         <h3 className="text-sm font-medium text-slate-300 mb-2">Kích thước</h3>
+                         <select
+                            value={idPhotoSize.id}
+                            onChange={(e) => onIdPhotoSizeChange(ID_PHOTO_SIZES.find(s => s.id === e.target.value) || ID_PHOTO_SIZES[0])}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors cursor-pointer"
+                        >
+                            {ID_PHOTO_SIZES.map(size => <option key={size.id} value={size.id}>{size.name}</option>)}
+                        </select>
+                    </div>
+                    {/* ID Photo Background */}
+                    <div>
+                        <h3 className="text-sm font-medium text-slate-300 mb-2">Phông nền</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                           {ID_PHOTO_BACKGROUNDS.map(bg => {
+                                const isSelected = idPhotoBackground.id === bg.id;
+                                return (
+                                    <button
+                                        key={bg.id}
+                                        onClick={() => onIdPhotoBackgroundChange(bg)}
+                                        className={`flex items-center justify-center p-3 space-x-2 bg-slate-800 rounded-lg h-14 transition-all duration-200 transform hover:bg-slate-700 ring-2 ${isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'}`}
+                                    >
+                                        <div className={`w-6 h-6 rounded-full border border-slate-500 ${bg.className}`}></div>
+                                        <span className="text-sm font-medium text-slate-200">{bg.name}</span>
+                                    </button>
+                                );
+                           })}
+                        </div>
+                    </div>
+                    {/* ID Photo Attire */}
+                     <div>
+                         <h3 className="text-sm font-medium text-slate-300 mb-2">Trang phục</h3>
+                         <select
+                            value={idPhotoAttire.id}
+                            onChange={(e) => onIdPhotoAttireChange(ID_PHOTO_ATTIRES.find(a => a.id === e.target.value) || ID_PHOTO_ATTIRES[0])}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors cursor-pointer"
+                        >
+                            {ID_PHOTO_ATTIRES.map(attire => <option key={attire.id} value={attire.id}>{attire.name}</option>)}
+                        </select>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* Standard Controls */}
+                    <div className="grid grid-cols-3 gap-3">
+                        {IMAGE_TYPES.map(type => {
+                            const isSelected = selectedImageType.id === type.id;
+                            return (
+                                <button
+                                    key={type.id}
+                                    onClick={() => onImageTypeChange(type)}
+                                    className={`flex flex-col items-center justify-center text-center p-3 space-y-2 bg-slate-800 rounded-lg h-28 transition-all duration-200 transform hover:bg-slate-700 ring-2 ${
+                                        isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
+                                    }`}
+                                >
+                                    <div className="text-emerald-400">
+                                        <type.icon className="h-10 w-10" />
+                                    </div>
+                                    <span className="text-xs font-medium text-slate-200">{type.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-medium text-slate-300 mb-3">Kích thước & Tỷ lệ</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {ASPECT_RATIOS.map(ratio => {
+                            const isSelected = selectedAspectRatio === ratio.id;
+                            return (
+                                <button
+                                key={ratio.id}
+                                onClick={() => onAspectRatioChange(ratio.id)}
+                                className={`flex flex-col items-center justify-center text-center p-2 space-y-1 bg-slate-800 rounded-lg h-20 transition-all duration-200 transform hover:bg-slate-700 ring-2 ${
                                     isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
                                 }`}
-                            >
-                                <div className="text-emerald-400">
-                                    <type.icon className="h-10 w-10" />
-                                </div>
-                                <span className="text-xs font-medium text-slate-200">{type.name}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            <div>
-                <h3 className="text-sm font-medium text-slate-300 mb-3">Kích thước & Tỷ lệ</h3>
-                <div className="grid grid-cols-3 gap-3">
-                    {ASPECT_RATIOS.map(ratio => {
-                    const isSelected = selectedAspectRatio === ratio.id;
-                    return (
-                        <button
-                        key={ratio.id}
-                        onClick={() => onAspectRatioChange(ratio.id)}
-                        className={`flex flex-col items-center justify-center text-center p-2 space-y-1 bg-slate-800 rounded-lg h-20 transition-all duration-200 transform hover:bg-slate-700 ring-2 ${
-                            isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
-                        }`}
-                        >
-                        <div className="text-emerald-400"><ratio.icon className="h-6 w-6" /></div>
-                        <span className="text-xs font-medium text-slate-200">{ratio.name}</span>
-                        </button>
-                    );
-                    })}
-                </div>
-                <div className="mt-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <label id="custom-size-label" className="text-sm font-medium text-slate-400 flex-shrink-0">
-                            Tùy chỉnh (px)
-                        </label>
-                        <label htmlFor="custom-size-toggle" className="flex items-center cursor-pointer select-none">
-                            <div className="relative">
-                                <input
-                                    type="checkbox"
-                                    id="custom-size-toggle"
-                                    className="sr-only peer"
-                                    checked={isCustomSizeEnabled}
-                                    onChange={handleToggleCustomSize}
-                                    aria-labelledby="custom-size-label"
-                                />
-                                <div className="block bg-slate-800 border border-slate-700 w-14 h-8 rounded-full peer-checked:bg-emerald-500/50 peer-checked:border-emerald-500 transition-colors"></div>
-                                <div className={`dot absolute left-1 top-1 bg-slate-500 w-6 h-6 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-full peer-checked:bg-emerald-400`}></div>
+                                >
+                                <div className="text-emerald-400"><ratio.icon className="h-6 w-6" /></div>
+                                <span className="text-xs font-medium text-slate-200">{ratio.name}</span>
+                                </button>
+                            );
+                            })}
+                        </div>
+                        <div className="mt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label id="custom-size-label" className="text-sm font-medium text-slate-400 flex-shrink-0">
+                                    Tùy chỉnh (px)
+                                </label>
+                                <label htmlFor="custom-size-toggle" className="flex items-center cursor-pointer select-none">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            id="custom-size-toggle"
+                                            className="sr-only peer"
+                                            checked={isCustomSizeEnabled}
+                                            onChange={handleToggleCustomSize}
+                                            aria-labelledby="custom-size-label"
+                                        />
+                                        <div className="block bg-slate-800 border border-slate-700 w-14 h-8 rounded-full peer-checked:bg-emerald-500/50 peer-checked:border-emerald-500 transition-colors"></div>
+                                        <div className={`dot absolute left-1 top-1 bg-slate-500 w-6 h-6 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-full peer-checked:bg-emerald-400`}></div>
+                                    </div>
+                                </label>
                             </div>
-                        </label>
+                            <div className={`flex items-center gap-2 w-full transition-opacity duration-300 ${!isCustomSizeEnabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                                <input 
+                                    type="number" 
+                                    placeholder="Rộng" 
+                                    value={customWidth} 
+                                    onChange={handleCustomWidthChange}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-center focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                    disabled={!isCustomSizeEnabled}
+                                />
+                                <span className="text-slate-500">×</span>
+                                <input 
+                                    type="number" 
+                                    placeholder="Cao" 
+                                    value={customHeight} 
+                                    onChange={handleCustomHeightChange}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-center focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                    disabled={!isCustomSizeEnabled}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className={`flex items-center gap-2 w-full transition-opacity duration-300 ${!isCustomSizeEnabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                        <input 
-                            type="number" 
-                            placeholder="Rộng" 
-                            value={customWidth} 
-                            onChange={handleCustomWidthChange}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-center focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            disabled={!isCustomSizeEnabled}
-                        />
-                        <span className="text-slate-500">×</span>
-                        <input 
-                            type="number" 
-                            placeholder="Cao" 
-                            value={customHeight} 
-                            onChange={handleCustomHeightChange}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-center focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            disabled={!isCustomSizeEnabled}
-                        />
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center space-x-3 w-full sm:w-auto">

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { Style } from '../types';
-import { PRODUCT_CATEGORIES, CustomPromptIcon } from '../constants';
+// FIX: 'PRODUCT_CATEGORIES' is not exported from '../constants'. This component appears to be unused.
+// import { PRODUCT_CATEGORIES, CustomPromptIcon } from '../constants';
+import { CustomPromptIcon } from '../constants';
 
 interface ProductStylesTabProps {
     selectedStyle: Style;
@@ -15,13 +17,18 @@ export const ProductStylesTab: React.FC<ProductStylesTabProps> = ({
     productPrompt, 
     onProductPromptChange 
 }) => {
+    // FIX: This component is not used in the application and relies on 'PRODUCT_CATEGORIES' which is not defined.
+    // Returning null to fix the compilation error.
+    return null;
+
+    /*
     const [activeProductCat, setActiveProductCat] = useState(PRODUCT_CATEGORIES[0].id);
 
     const stylesForProductCat = PRODUCT_CATEGORIES.find(cat => cat.id === activeProductCat)?.styles || [];
 
     return (
         <div className="flex flex-col space-y-4 h-full">
-            {/* Sub-categories */}
+            {/* Sub-categories * /}
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {[...PRODUCT_CATEGORIES, { id: 'custom', name: 'Tùy chỉnh', icon: CustomPromptIcon }].map(cat => {
                     const isSelected = activeProductCat === cat.id;
@@ -42,7 +49,7 @@ export const ProductStylesTab: React.FC<ProductStylesTabProps> = ({
                 })}
             </div>
 
-            {/* Content for sub-category */}
+            {/* Content for sub-category * /}
             {activeProductCat === 'custom' ? (
                 <div className="pt-2">
                     <label htmlFor="custom-product-prompt" className="block text-sm font-medium text-slate-300 mb-2">
@@ -84,4 +91,5 @@ export const ProductStylesTab: React.FC<ProductStylesTabProps> = ({
             )}
         </div>
     );
+    */
 };
