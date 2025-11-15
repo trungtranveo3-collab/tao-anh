@@ -166,7 +166,9 @@ const REGULAR_STYLES: Style[] = [
     { id: 'newspaper', name: 'Giang hồ Cũ', icon: NewspaperIcon, category: 'style', prompt: "Với tư cách là đạo diễn phim xã hội đen Hồng Kông thập niên 90, hãy tạo một bức ảnh 8K đậm chất 'giang hồ'. **Chủ thể**: Người trong ảnh, trang phục kiểu retro (sơ mi hoa, áo khoác da). **Bối cảnh**: Một con hẻm nhỏ ở Hồng Kông về đêm, hoặc một quán mạt chược. **Ánh sáng**: Ánh sáng kịch tính từ các nguồn sáng đơn lẻ, tạo bóng đổ mạnh. **Máy ảnh & Ống kính**: Mô phỏng máy quay phim cũ. **Hậu kỳ**: Chỉnh màu theo tông phim cũ, ngả vàng hoặc xanh, thêm hiệu ứng nhiễu hạt và có thể có vệt sáng mờ. **Yêu cầu cốt lõi**: Tái tạo chính xác đặc điểm khuôn mặt của chủ thể." },
 ];
 
-const baseCompositePrompt = "Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Ghép khuôn mặt của người trong ảnh gốc vào một bối cảnh mới của **{item}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên khuôn mặt của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
+const baseCompositePrompt = "Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đặt người trong ảnh gốc vào bối cảnh của **{item}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
+const CELEBRITY_PROMPT_TEMPLATE = "Với tư cách là một chuyên gia Photoshop và đạo diễn hình ảnh, hãy tạo một bức ảnh 4K siêu thực, liền mạch. **Nhiệm vụ**: Tạo một bức ảnh trong đó người từ ảnh gốc đang đứng cạnh và chụp ảnh chung với **{item}**. Hãy tưởng tượng đây là một khoảnh khắc được bắt gặp tự nhiên, ví dụ như tại một sự kiện, buổi ra mắt phim, hoặc một cuộc gặp gỡ tình cờ. **Yêu cầu kỹ thuật**: 1. **Chủ thể**: Phải có hai người trong ảnh: người từ ảnh gốc và **{item}**. 2. **Tương tác**: Hai người nên có tương tác tự nhiên, như thể họ đang thực sự ở cùng nhau. 3. **Bối cảnh & Ánh sáng**: Bối cảnh, ánh sáng, bóng đổ, và tông màu phải đồng nhất và nhất quán cho cả hai người, tạo ra một kết quả chân thực và đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn 100% các đặc điểm khuôn mặt độc đáo của người trong ảnh gốc. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
+
 
 const CELEBRITY_SUGGESTIONS: string[] = [
     // Vietnamese
@@ -228,7 +230,7 @@ const CELEBRITY_STYLES: Style[] = CELEBRITY_SUGGESTIONS.map(name => ({
     name: name,
     icon: StarIcon, 
     category: 'celebrity',
-    prompt: baseCompositePrompt.replace('{item}', name)
+    prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', name)
 }));
 
 const TRAVEL_STYLES: Style[] = TRAVEL_SUGGESTIONS.map(name => ({

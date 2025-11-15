@@ -4,9 +4,10 @@ import {
     signInWithEmailAndPassword,
     sendEmailVerification,
     sendPasswordResetEmail,
-    updateProfile
+    updateProfile,
+    fetchSignInMethodsForEmail
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
 import { Panel } from './Panel';
@@ -30,8 +31,33 @@ export const AuthManager: React.FC = () => {
     const [error, setError] = useState<React.ReactNode | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    
+    const [showPendingInfo, setShowPendingInfo] = useState(false);
+    const [pendingInfoMessage, setPendingInfoMessage] = useState('');
+    const [isEmailInUse, setIsEmailInUse] = useState(false);
+
 
     const avatarInputRef = useRef<HTMLInputElement>(null);
+
+    // This effect handles the user returning from email verification.
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('fromVerification') === 'true') {
+            const userEmail = urlParams.get('email');
+            setIsLogin(true); // Switch to login tab
+            if (userEmail) {
+                setEmail(userEmail);
+            }
+            // Show the pending approval message
+            setPendingInfoMessage("Email của bạn đã được xác thực thành công! Tài khoản của bạn hiện đang chờ quản trị viên phê duyệt.");
+            setIsEmailInUse(false); // This is for a different flow, should be false here.
+            setShowPendingInfo(true);
+
+            // Clean up URL to prevent the modal from showing up on refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    }, []);
 
     // Clean up the object URL to prevent memory leaks
     useEffect(() => {
@@ -74,6 +100,59 @@ export const AuthManager: React.FC = () => {
         setAvatarFile(null);
         setAvatarPreview(null);
     };
+    
+    const handleClosePendingInfo = () => {
+        setShowPendingInfo(false);
+        setPendingInfoMessage('');
+        setIsEmailInUse(false);
+        // Reset form and switch to login
+        setIsLogin(true); 
+        // Keep email for convenience, clear password
+        setPassword('');
+        setDisplayName('');
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        if (avatarInputRef.current) {
+            avatarInputRef.current.value = '';
+        }
+    };
+
+    const handleResendFromRegister = async () => {
+        if (!password) {
+            setShowPendingInfo(false);
+            setIsEmailInUse(false);
+            setError("Vui lòng nhập mật khẩu của bạn trên form đăng ký để thử lại.");
+            return;
+        }
+    
+        setIsLoading(true);
+        setMessage(null);
+        setError(null);
+        setShowPendingInfo(false); 
+        setIsEmailInUse(false);
+    
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            if (!userCredential.user.emailVerified) {
+                const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
+                await sendEmailVerification(userCredential.user, { url: continueUrl });
+                setMessage("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư đến (và cả mục spam) rồi đăng nhập.");
+            } else {
+                setMessage("Tài khoản của bạn đã được xác thực. Vui lòng đăng nhập.");
+            }
+            setIsLogin(true);
+        } catch (err: any) {
+            console.error("Resend from register error:", err);
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                 setError("Mật khẩu bạn đã nhập không khớp với tài khoản đã đăng ký. Vui lòng thử đăng nhập hoặc sử dụng chức năng 'Quên mật khẩu'.");
+            } else {
+                 setError("Đã xảy ra lỗi khi cố gắng gửi lại email. Vui lòng thử lại sau.");
+            }
+            setIsLogin(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleAuthAction = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -91,7 +170,8 @@ export const AuthManager: React.FC = () => {
                         setMessage(null);
                         setError(null);
                         try {
-                            await sendEmailVerification(userCredential.user);
+                            const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
+                            await sendEmailVerification(userCredential.user, { url: continueUrl });
                             setMessage("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư đến và cả mục spam.");
                         } catch (e) {
                             setError(<><strong>Gửi lại thất bại.</strong><p className="mt-1">Vui lòng chờ một lát trước khi thử lại.</p></>);
@@ -143,65 +223,69 @@ export const AuthManager: React.FC = () => {
             }
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // 1. Upload avatar if it exists
-                let photoURL: string | null = null;
-                if (avatarFile) {
-                    const avatarRef = ref(storage, `avatars/${user.uid}`);
-                    await uploadBytes(avatarRef, avatarFile);
-                    photoURL = await getDownloadURL(avatarRef);
+                // Proactively check if the email exists.
+                const methods = await fetchSignInMethodsForEmail(auth, email);
+                if (methods.length > 0) {
+                    // This email is already in use. We don't treat this as an error,
+                    // but as a specific user flow.
+                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
+                    setIsEmailInUse(true);
+                    setShowPendingInfo(true);
+                    setIsLoading(false); // Stop loading before returning.
+                    return; 
                 }
 
-                // 2. Update Firebase Auth profile
-                await updateProfile(user, {
-                    displayName: displayName,
-                    photoURL: photoURL
-                });
+                // Step 1: Create user in Firebase Auth.
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
 
-                // 3. Send verification email
-                await sendEmailVerification(user);
-
-                // 4. Create user profile in Firestore
+                // Step 2: Create Firestore document immediately. This is the most critical step to prevent inconsistency.
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: user.email,
                     displayName: displayName,
-                    photoURL: photoURL,
+                    photoURL: null, // Start with null, will update if avatar succeeds
                     role: 'user',
                     status: 'pending',
                     createdAt: serverTimestamp()
                 });
 
-                setMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
-                // Reset form and switch to login
-                setIsLogin(true); 
-                setEmail('');
-                setPassword('');
-                setDisplayName('');
-                setAvatarFile(null);
-                setAvatarPreview(null);
+                // Step 3: Handle optional avatar upload and get URL.
+                let photoURL: string | null = null;
+                if (avatarFile) {
+                    try {
+                        const avatarRef = ref(storage, `avatars/${user.uid}`);
+                        await uploadBytes(avatarRef, avatarFile);
+                        photoURL = await getDownloadURL(avatarRef);
+                        // Update just the photoURL in Firestore, as other data is already there.
+                        await updateDoc(doc(db, "users", user.uid), { photoURL: photoURL });
+                    } catch (uploadError) {
+                        console.warn("Avatar upload failed during registration. Proceeding without avatar.", uploadError);
+                        // The process can continue, the user will just not have an avatar.
+                    }
+                }
+
+                // Step 4: Perform final, non-critical updates in parallel (update Auth profile, send email).
+                await Promise.all([
+                    updateProfile(user, {
+                        displayName: displayName,
+                        photoURL: photoURL // This will be null if upload failed, which is correct.
+                    }),
+                    sendEmailVerification(user, { url: continueUrl })
+                ]);
+                
+                // Step 5: Show success message to the user.
+                setPendingInfoMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
+                setIsEmailInUse(false);
+                setShowPendingInfo(true);
 
             } catch (err: any) {
                 console.error("Registration error:", err);
                 if (err.code === 'auth/email-already-in-use') {
-                    setError(
-                         <>
-                            <p className="font-bold">Email này đã được sử dụng</p>
-                            <p className="mt-1">
-                                Có vẻ như bạn đã có tài khoản. Hãy thử{' '}
-                                <button
-                                    type="button"
-                                    className="font-semibold underline hover:text-white transition-colors"
-                                    onClick={() => handleTabChange(true)}
-                                >
-                                    đăng nhập
-                                </button>
-                                .
-                            </p>
-                        </>
-                    );
+                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
+                    setIsEmailInUse(true);
+                    setShowPendingInfo(true);
                 } else if (err.code === 'auth/invalid-email') {
                     setError('Địa chỉ email không hợp lệ.');
                 } else {
@@ -237,6 +321,53 @@ export const AuthManager: React.FC = () => {
 
     return (
          <div className="min-h-screen text-slate-300 flex items-center justify-center p-4">
+            {showPendingInfo && (
+                <div 
+                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <style>
+                        {`@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}
+                    </style>
+                    <div className="w-full max-w-md">
+                        <Panel>
+                            <div className="flex flex-col space-y-4 text-center">
+                                <h2 className="text-xl font-bold text-white">Thông báo</h2>
+                                <p className="text-slate-300">
+                                    {pendingInfoMessage}
+                                </p>
+                                <div className="pt-4">
+                                    {isEmailInUse ? (
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <button 
+                                                onClick={handleResendFromRegister}
+                                                disabled={isLoading}
+                                                className="flex-1 px-6 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
+                                            >
+                                                Gửi lại email xác thực
+                                            </button>
+                                            <button 
+                                                onClick={handleClosePendingInfo}
+                                                className="flex-1 px-6 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
+                                            >
+                                                Đã hiểu
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={handleClosePendingInfo}
+                                            className="w-full px-6 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
+                                        >
+                                            Đã hiểu
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </Panel>
+                    </div>
+                </div>
+            )}
             <main className="max-w-md w-full">
                 <style>
                     {`@keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}

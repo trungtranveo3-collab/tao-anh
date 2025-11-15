@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { Style } from '../types';
 import { STYLE_TABS, STYLES } from '../constants';
 import { WeddingStylesTab } from './WeddingStylesTab';
@@ -20,6 +20,8 @@ interface StyleSelectorProps {
     onPanoramaPromptChange: (prompt: string) => void;
     productPrompt: string;
     onProductPromptChange: (prompt: string) => void;
+    isCustomPromptActive: boolean;
+    onToggleCustomPrompt: (isActive: boolean) => void;
 }
 
 const ProductStylesTab: React.FC<{
@@ -28,7 +30,9 @@ const ProductStylesTab: React.FC<{
     onStyleSelect: (style: Style) => void;
     productPrompt: string;
     onProductPromptChange: (prompt: string) => void;
-}> = ({ styles, selectedStyle, onStyleSelect, productPrompt, onProductPromptChange }) => {
+    isCustomPromptActive: boolean;
+    onToggleCustomPrompt: (isActive: boolean) => void;
+}> = ({ styles, selectedStyle, onStyleSelect, productPrompt, onProductPromptChange, isCustomPromptActive, onToggleCustomPrompt }) => {
 
     const categories = useMemo(() => {
         const cats = styles.reduce((acc, style) => {
@@ -67,68 +71,67 @@ const ProductStylesTab: React.FC<{
                 />
             </div>
 
-            <div className="flex-grow overflow-y-auto pr-2 max-h-[350px] space-y-4">
-                {categories.map(([catKey, catStyles]) => (
-                    <div key={catKey}>
-                        <h3 className="text-sm font-semibold text-emerald-400 mb-2">{catNames[catKey] || 'Khác'}</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                           {catStyles.map(style => {
-                                const isSelected = selectedStyle.id === style.id && !productPrompt;
-                                return (
-                                    <button
-                                        key={style.id}
-                                        onClick={() => {
-                                            onStyleSelect(style);
-                                            onProductPromptChange('');
-                                        }}
-                                        className={`flex items-center justify-center text-center p-3 bg-slate-800 rounded-lg transition-all duration-200 transform hover:bg-slate-700 min-h-[50px] ring-2 ${
-                                            isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
-                                        }`}
-                                    >
-                                        <span className="text-xs sm:text-sm font-medium text-slate-200">{style.name}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+            <div className="flex items-center justify-center gap-4">
+                <span className={`text-sm font-medium transition-colors ${!isCustomPromptActive ? 'text-emerald-400' : 'text-slate-500'}`}>Gợi ý</span>
+                <label htmlFor="product-prompt-toggle" className="flex items-center cursor-pointer select-none">
+                    <div className="relative">
+                        <input
+                            type="checkbox"
+                            id="product-prompt-toggle"
+                            className="sr-only peer"
+                            checked={isCustomPromptActive}
+                            onChange={() => onToggleCustomPrompt(!isCustomPromptActive)}
+                        />
+                        <div className="block bg-slate-900 border border-slate-700 w-14 h-8 rounded-full peer-checked:bg-emerald-500/50 peer-checked:border-emerald-500 transition-colors"></div>
+                        <div className={`dot absolute left-1 top-1 bg-slate-500 w-6 h-6 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-full peer-checked:bg-emerald-400`}></div>
                     </div>
-                ))}
+                </label>
+                <span className={`text-sm font-medium transition-colors ${isCustomPromptActive ? 'text-emerald-400' : 'text-slate-500'}`}>Tùy chỉnh</span>
             </div>
+
+            {!isCustomPromptActive && (
+                <div className="flex-grow overflow-y-auto pr-2 max-h-[350px] space-y-4">
+                    {categories.map(([catKey, catStyles]) => (
+                        <div key={catKey}>
+                            <h3 className="text-sm font-semibold text-emerald-400 mb-2">{catNames[catKey] || 'Khác'}</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {catStyles.map(style => {
+                                    const isSelected = selectedStyle.id === style.id && !productPrompt;
+                                    return (
+                                        <button
+                                            key={style.id}
+                                            onClick={() => {
+                                                onStyleSelect(style);
+                                            }}
+                                            className={`flex items-center justify-center text-center p-3 bg-slate-800 rounded-lg transition-all duration-200 transform hover:bg-slate-700 min-h-[50px] ring-2 ${
+                                                isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
+                                            }`}
+                                        >
+                                            <span className="text-xs sm:text-sm font-medium text-slate-200">{style.name}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
 
 
 export const StyleSelector: React.FC<StyleSelectorProps> = (props) => {
-    const { activeTab, onTabChange, selectedStyle, onStyleSelect } = props;
+    const { activeTab, onTabChange, selectedStyle, onStyleSelect, isCustomPromptActive, onToggleCustomPrompt } = props;
     
     const stylesForTab = STYLES.filter(s => s.category === activeTab);
 
-    const propsMap: { [key: string]: Omit<React.ComponentProps<typeof CustomPromptTab>, 'styles' | 'selectedStyle' | 'onStyleSelect'> } = {
-        style: {
-            label: 'Nhập prompt phong cách tùy chỉnh hoặc chọn gợi ý:',
-            placeholder: 'VD: Tranh sơn dầu, nghệ thuật pixel, anime thập niên 90...',
-            promptValue: props.stylePrompt,
-            onPromptChange: props.onStylePromptChange,
-            isStyleTab: true,
-        },
-        celebrity: {
-            label: 'Nhập tên người nổi tiếng, nhân vật, hoặc prompt tùy chỉnh:',
-            placeholder: 'VD: Taylor Swift, Iron Man, phi hành gia...',
-            promptValue: props.celebrityPrompt,
-            onPromptChange: props.onCelebrityPromptChange,
-        },
-        travel: {
-            label: 'Nhập địa điểm du lịch bạn muốn đến:',
-            placeholder: 'VD: Paris, Bãi biển Hawaii, Đỉnh Everest...',
-            promptValue: props.travelPrompt,
-            onPromptChange: props.onTravelPromptChange,
-        },
-        panorama: {
-            label: 'Nhập bối cảnh toàn cảnh bạn muốn:',
-            placeholder: 'VD: Dải ngân hà, Rừng rậm Amazon, Thành phố Cyberpunk...',
-            promptValue: props.panoramaPrompt,
-            onPromptChange: props.onPanoramaPromptChange,
-        },
+    const customTabCommonProps = {
+        styles: stylesForTab,
+        selectedStyle: selectedStyle,
+        onStyleSelect: onStyleSelect,
+        isCustomPromptActive: isCustomPromptActive,
+        onToggle: onToggleCustomPrompt,
     };
 
     /**
@@ -145,6 +148,8 @@ export const StyleSelector: React.FC<StyleSelectorProps> = (props) => {
                             onStyleSelect={onStyleSelect} 
                             productPrompt={props.productPrompt}
                             onProductPromptChange={props.onProductPromptChange}
+                            isCustomPromptActive={isCustomPromptActive}
+                            onToggleCustomPrompt={onToggleCustomPrompt}
                         />;
             case 'id_photo':
                 return (
@@ -159,14 +164,37 @@ export const StyleSelector: React.FC<StyleSelectorProps> = (props) => {
             case 'wedding':
                 return <WeddingStylesTab styles={stylesForTab} selectedStyle={selectedStyle} onStyleSelect={onStyleSelect} />;
             case 'style':
+                return <CustomPromptTab 
+                            {...customTabCommonProps}
+                            label="Nhập prompt phong cách tùy chỉnh hoặc chọn gợi ý:"
+                            placeholder="VD: Tranh sơn dầu, nghệ thuật pixel, anime thập niên 90..."
+                            promptValue={props.stylePrompt}
+                            onPromptChange={props.onStylePromptChange}
+                            isStyleTab={true}
+                       />;
             case 'celebrity':
+                 return <CustomPromptTab 
+                            {...customTabCommonProps}
+                            label="Nhập tên người nổi tiếng, nhân vật, hoặc prompt tùy chỉnh:"
+                            placeholder="VD: Taylor Swift, Iron Man, phi hành gia..."
+                            promptValue={props.celebrityPrompt}
+                            onPromptChange={props.onCelebrityPromptChange}
+                       />;
             case 'travel':
+                return <CustomPromptTab 
+                            {...customTabCommonProps}
+                            label="Nhập địa điểm du lịch bạn muốn đến:"
+                            placeholder="VD: Paris, Bãi biển Hawaii, Đỉnh Everest..."
+                            promptValue={props.travelPrompt}
+                            onPromptChange={props.onTravelPromptChange}
+                       />;
             case 'panorama':
                 return <CustomPromptTab 
-                            {...propsMap[activeTab]}
-                            styles={stylesForTab}
-                            selectedStyle={selectedStyle}
-                            onStyleSelect={onStyleSelect}
+                            {...customTabCommonProps}
+                            label="Nhập bối cảnh toàn cảnh bạn muốn:"
+                            placeholder="VD: Dải ngân hà, Rừng rậm Amazon, Thành phố Cyberpunk..."
+                            promptValue={props.panoramaPrompt}
+                            onPromptChange={props.onPanoramaPromptChange}
                        />;
             default:
                 return null;

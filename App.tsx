@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebaseConfig';
 
 
@@ -173,9 +173,31 @@ function App() {
                     setIsPendingApproval(true);
                 }
             } else {
-                console.error("User data not found in Firestore.");
-                setUserProfile(null);
-                setIsPendingApproval(true);
+                // Self-healing: User exists in Auth, is verified, but has no Firestore doc.
+                // This likely happened due to an interrupted registration. Create a doc for them now.
+                console.warn(`User data not found in Firestore for UID: ${currentUser.uid}. Creating a default profile.`);
+                try {
+                    await setDoc(doc(db, 'users', currentUser.uid), {
+                        uid: currentUser.uid,
+                        email: currentUser.email,
+                        displayName: currentUser.displayName || 'New User', // Use Auth display name or a fallback
+                        photoURL: currentUser.photoURL || null,
+                        role: 'user',
+                        status: 'pending', // Force pending status for admin review
+                        createdAt: serverTimestamp(),
+                    });
+                    // After creating the doc, treat them as a new pending user.
+                    setUserProfile(null);
+                    setIsPendingApproval(true);
+                } catch (creationError) {
+                    console.error("Failed to self-heal and create Firestore user document. Logging out.", creationError);
+                    // If we can't create the doc, log them out to prevent a broken state.
+                    await signOut(auth);
+                    // Explicitly clear state to be safe
+                    setUser(null);
+                    setUserProfile(null);
+                    setIsPendingApproval(false);
+                }
             }
         } else {
             setUser(null);
@@ -422,7 +444,7 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
             case 'product': customPrompt = productPrompt; break;
         }
 
-        if (customPrompt) {
+        if (isCustomPromptActive && customPrompt) {
             // Logic for custom prompts with expert personas
             if (activeTab === 'style') {
                 coreContent = `Với tư cách là một đạo diễn nghệ thuật bậc thầy, hãy tạo ra một hình ảnh 4K siêu thực, chất lượng cao theo phong cách sau: ${customPrompt}.`;
@@ -476,7 +498,7 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
 
     return coreContent;
 
-}, [selectedStyle, selectedImageType, accessories, isAccessoryEnabled, activeTab, stylePrompt, celebrityPrompt, travelPrompt, panoramaPrompt, productPrompt, mode, selectedAspectRatio, customWidth, customHeight, idPhotoSize, idPhotoBackground, idPhotoAttire]);
+}, [selectedStyle, selectedImageType, accessories, isAccessoryEnabled, activeTab, stylePrompt, celebrityPrompt, travelPrompt, panoramaPrompt, productPrompt, mode, selectedAspectRatio, customWidth, customHeight, idPhotoSize, idPhotoBackground, idPhotoAttire, isCustomPromptActive]);
 
   const handleGenerate = useCallback(async () => {
     if (!ai) {
@@ -566,13 +588,16 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
   const createPromptChangeHandler = (setter: React.Dispatch<React.SetStateAction<string>>) => {
       return (value: string) => {
           setter(value);
-          setIsCustomPromptActive(!!value);
+          // Automatically enable custom mode when user types
+          if (value) {
+            setIsCustomPromptActive(true);
+          }
       };
   };
 
   const handleStyleSelect = (style: Style) => {
       setSelectedStyle(style);
-      // Clear all custom prompts and deactivate custom mode
+      // Clear all custom prompts and deactivate custom mode when a style is selected
       setStylePrompt('');
       setCelebrityPrompt('');
       setTravelPrompt('');
@@ -598,6 +623,20 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
       setGeneratedImages([]);
       setIsCustomPromptActive(false);
   }, []);
+  
+  const handleToggleCustomPrompt = useCallback((isActive: boolean) => {
+    setIsCustomPromptActive(isActive);
+    // If we are turning OFF custom mode, clear the prompt for the current tab.
+    if (!isActive) {
+        switch (activeTab) {
+            case 'style': setStylePrompt(''); break;
+            case 'celebrity': setCelebrityPrompt(''); break;
+            case 'travel': setTravelPrompt(''); break;
+            case 'panorama': setPanoramaPrompt(''); break;
+            case 'product': setProductPrompt(''); break;
+        }
+    }
+  }, [activeTab]);
 
   const openViewer = useCallback((index: number) => setViewerIndex(index), []);
   const closeViewer = useCallback(() => setViewerIndex(null), []);
@@ -778,6 +817,7 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
                             productPrompt={productPrompt}
                             onProductPromptChange={createPromptChangeHandler(setProductPrompt)}
                             isCustomPromptActive={isCustomPromptActive}
+                            onToggleCustomPrompt={handleToggleCustomPrompt}
                         />
                         {mode === 'single' && !['wedding', 'product', 'id_photo'].includes(activeTab) && (
                             <AccessorySelector 
