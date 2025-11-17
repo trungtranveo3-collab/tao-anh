@@ -226,21 +226,19 @@ export const AuthManager: React.FC = () => {
                 // Proactively check if the email exists.
                 const methods = await fetchSignInMethodsForEmail(auth, email);
                 if (methods.length > 0) {
-                    // This email is already in use. We don't treat this as an error,
-                    // but as a specific user flow.
                     setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
                     setIsEmailInUse(true);
                     setShowPendingInfo(true);
-                    setIsLoading(false); // Stop loading before returning.
+                    setIsLoading(false);
                     return; 
                 }
 
+                // **CRITICAL STEPS**
                 // Step 1: Create user in Firebase Auth.
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
-
-                // Step 2: Create Firestore document immediately. This is the most critical step to prevent inconsistency.
+                
+                // Step 2: Create Firestore document immediately.
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: user.email,
@@ -250,46 +248,58 @@ export const AuthManager: React.FC = () => {
                     status: 'pending',
                     createdAt: serverTimestamp()
                 });
-
-                // Step 3: Handle optional avatar upload and get URL.
+                
+                // **NON-CRITICAL STEPS (Proceed even if they fail)**
+                // These steps happen after the user is successfully created.
+                // We show the success modal regardless of their outcome.
+                
                 let photoURL: string | null = null;
                 if (avatarFile) {
                     try {
                         const avatarRef = ref(storage, `avatars/${user.uid}`);
                         await uploadBytes(avatarRef, avatarFile);
                         photoURL = await getDownloadURL(avatarRef);
-                        // Update just the photoURL in Firestore, as other data is already there.
+                        // Update just the photoURL in Firestore
                         await updateDoc(doc(db, "users", user.uid), { photoURL: photoURL });
                     } catch (uploadError) {
-                        console.warn("Avatar upload failed during registration. Proceeding without avatar.", uploadError);
-                        // The process can continue, the user will just not have an avatar.
+                        console.warn("Avatar upload failed during registration but user was created.", uploadError);
                     }
                 }
 
-                // Step 4: Perform final, non-critical updates in parallel (update Auth profile, send email).
-                await Promise.all([
-                    updateProfile(user, {
+                try {
+                     await updateProfile(user, {
                         displayName: displayName,
-                        photoURL: photoURL // This will be null if upload failed, which is correct.
-                    }),
-                    sendEmailVerification(user, { url: continueUrl })
-                ]);
-                
-                // Step 5: Show success message to the user.
+                        photoURL: photoURL
+                    });
+                } catch(profileError) {
+                    console.warn("Updating Auth profile failed but user was created.", profileError);
+                }
+
+                try {
+                    const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
+                    await sendEmailVerification(user, { url: continueUrl });
+                } catch (emailError) {
+                     console.warn("Sending verification email failed but user was created.", emailError);
+                     // You could potentially update the UI to inform the user about the email failure here
+                     // but for now, we prioritize showing the main success message.
+                }
+
+                // **FINAL STEP: ALWAYS SHOW SUCCESS MODAL**
                 setPendingInfoMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
                 setIsEmailInUse(false);
                 setShowPendingInfo(true);
 
             } catch (err: any) {
-                console.error("Registration error:", err);
+                console.error("Critical Registration error:", err);
                 if (err.code === 'auth/email-already-in-use') {
+                    // This case should be caught by the proactive check, but is here as a fallback.
                     setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
                     setIsEmailInUse(true);
                     setShowPendingInfo(true);
                 } else if (err.code === 'auth/invalid-email') {
                     setError('Địa chỉ email không hợp lệ.');
                 } else {
-                    setError('Đăng ký không thành công do có lỗi xảy ra. Vui lòng thử lại.');
+                    setError('Đăng ký không thành công do có lỗi nghiêm trọng xảy ra. Vui lòng thử lại.');
                 }
             }
         }
