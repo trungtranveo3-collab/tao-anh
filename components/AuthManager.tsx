@@ -34,8 +34,8 @@ export const AuthManager: React.FC = () => {
     
     const [showPendingInfo, setShowPendingInfo] = useState(false);
     const [pendingInfoMessage, setPendingInfoMessage] = useState('');
-    const [isEmailInUse, setIsEmailInUse] = useState(false);
-
+    
+    // Removed isEmailInUse state as we handle it directly in catch block now
 
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +50,6 @@ export const AuthManager: React.FC = () => {
             }
             // Show the pending approval message
             setPendingInfoMessage("Email của bạn đã được xác thực thành công! Tài khoản của bạn hiện đang chờ quản trị viên phê duyệt.");
-            setIsEmailInUse(false); 
             setShowPendingInfo(true);
 
             // Clean up URL to prevent the modal from showing up on refresh
@@ -109,7 +108,6 @@ export const AuthManager: React.FC = () => {
     const handleClosePendingInfo = () => {
         setShowPendingInfo(false);
         setPendingInfoMessage('');
-        setIsEmailInUse(false);
         // Reset form and switch to login
         setIsLogin(true); 
         // Keep email for convenience, clear password
@@ -125,7 +123,6 @@ export const AuthManager: React.FC = () => {
     const handleResendFromRegister = async () => {
         if (!password) {
             setShowPendingInfo(false);
-            setIsEmailInUse(false);
             setError("Vui lòng nhập mật khẩu của bạn trên form đăng ký để thử lại.");
             return;
         }
@@ -134,7 +131,6 @@ export const AuthManager: React.FC = () => {
         setMessage(null);
         setError(null);
         setShowPendingInfo(false); 
-        setIsEmailInUse(false);
     
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -204,328 +200,313 @@ export const AuthManager: React.FC = () => {
                         </>
                     );
                     setIsLoading(false);
-                    return;
+                    // Sign out immediately to prevent access
+                    auth.signOut(); 
                 }
-                // Thành công -> App.tsx sẽ tự động xử lý chuyển trang
+                // If verified, App.tsx listener will handle the rest
             } catch (err: any) {
                 console.error("Login error:", err);
-                const errorCode = err.code;
-                if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
-                    setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
-                } else if (errorCode === 'auth/too-many-requests') {
-                    setError('Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.');
-                } else if (errorCode === 'auth/network-request-failed') {
-                    setError('Lỗi kết nối mạng. Vui lòng kiểm tra internet.');
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    setError("Email hoặc mật khẩu không chính xác.");
+                } else if (err.code === 'auth/too-many-requests') {
+                    setError("Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.");
                 } else {
-                    setError(`Đăng nhập không thành công (${errorCode}).`);
+                    setError("Đăng nhập thất bại. Vui lòng thử lại.");
                 }
+                setIsLoading(false);
             }
         } else {
             // === REGISTER LOGIC ===
-            if (password.length < 6) {
-                setError("Mật khẩu phải chứa ít nhất 6 ký tự.");
-                setIsLoading(false);
-                return;
-            }
-             if (!displayName.trim()) {
-                setError("Vui lòng nhập tên hiển thị.");
-                setIsLoading(false);
-                return;
-            }
-
+            // FIX: Removed fetchSignInMethodsForEmail as it causes issues on custom domains/production
+            // due to Google's email enumeration protection.
+            
             try {
-                // BƯỚC 1: Tạo User Auth trước. 
-                // Nếu email trùng, nó sẽ throw lỗi ngay tại đây -> nhảy xuống catch.
+                // 1. Create Authentication User first
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                
-                // BƯỚC 2: Cập nhật Profile Auth cơ bản
-                await updateProfile(user, {
-                    displayName: displayName
-                }).catch(e => console.warn("Update profile failed", e));
 
-                // BƯỚC 3: Tạo Firestore Document (QUAN TRỌNG NHẤT)
-                // Dùng setDoc với merge: true để đảm bảo an toàn
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: displayName,
-                    photoURL: null, // Sẽ cập nhật sau nếu upload thành công
-                    role: 'user',
-                    status: 'pending',
-                    createdAt: serverTimestamp()
-                }, { merge: true });
-                
-                // BƯỚC 4: Upload Avatar (Nếu có)
-                // Chúng ta bọc trong try/catch riêng để nếu upload lỗi thì user vẫn được tạo thành công
+                // 2. Upload Avatar (Fail-safe: If upload fails, we still proceed)
+                let photoURL = null;
                 if (avatarFile) {
                     try {
-                        const avatarRef = ref(storage, `avatars/${user.uid}`);
-                        await uploadBytes(avatarRef, avatarFile);
-                        const photoURL = await getDownloadURL(avatarRef);
-                        
-                        // Cập nhật lại Firestore và Auth Profile
-                        await updateDoc(doc(db, "users", user.uid), { photoURL: photoURL });
-                        await updateProfile(user, { photoURL: photoURL });
+                        const storageRef = ref(storage, `avatars/${user.uid}`);
+                        await uploadBytes(storageRef, avatarFile);
+                        photoURL = await getDownloadURL(storageRef);
                     } catch (uploadErr) {
-                        console.error("Avatar upload failed, continuing registration:", uploadErr);
-                        // Không return lỗi ở đây, cho phép quy trình hoàn tất
+                        console.error("Avatar upload failed but continuing registration:", uploadErr);
+                        // We silently fail the avatar upload to ensure the user account is still created.
+                        // This fixes the issue where network errors during upload leave the user in a broken state.
                     }
                 }
 
-                // BƯỚC 5: Gửi Email Xác thực
-                try {
-                    const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
-                    await sendEmailVerification(user, { url: continueUrl });
-                } catch (emailError) {
-                     console.warn("Sending verification email warning:", emailError);
-                }
+                // 3. Update Auth Profile
+                await updateProfile(user, {
+                    displayName: displayName,
+                    photoURL: photoURL
+                });
 
-                // BƯỚC 6: Hiển thị thành công
-                setPendingInfoMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
-                setIsEmailInUse(false);
+                // 4. Create User Document in Firestore (Crucial step)
+                const userDocRef = doc(db, 'users', user.uid);
+                await setDoc(userDocRef, {
+                    uid: user.uid,
+                    email: email,
+                    displayName: displayName,
+                    photoURL: photoURL,
+                    role: 'user', // Default role
+                    status: 'pending', // Default status
+                    createdAt: serverTimestamp(),
+                });
+
+                // 5. Send Verification Email
+                const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
+                await sendEmailVerification(user, { url: continueUrl });
+
+                // 6. Show success message
+                setPendingInfoMessage(`Đăng ký thành công! Chúng tôi đã gửi email xác thực tới ${email}. Vui lòng kiểm tra hộp thư.`);
                 setShowPendingInfo(true);
+                
+                // Clear form
+                setAvatarFile(null);
+                setAvatarPreview(null);
 
             } catch (err: any) {
                 console.error("Registration error:", err);
-                const errorCode = err.code;
-                
-                if (errorCode === 'auth/email-already-in-use') {
-                    // Đây là nơi bắt lỗi nếu email đã tồn tại
-                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra hộp thư để xác thực hoặc đăng nhập.");
-                    setIsEmailInUse(true);
+                if (err.code === 'auth/email-already-in-use') {
+                    // This error is now caught here directly instead of using fetchSignInMethodsForEmail
+                    setPendingInfoMessage("Email này đã được đăng ký.");
                     setShowPendingInfo(true);
-                } else if (errorCode === 'auth/invalid-email') {
-                    setError('Địa chỉ email không hợp lệ.');
-                } else if (errorCode === 'auth/weak-password') {
-                    setError('Mật khẩu quá yếu.');
-                } else if (errorCode === 'auth/network-request-failed') {
-                     setError('Lỗi kết nối mạng. Không thể liên hệ máy chủ.');
+                    // Note: We handle the logic to "resend email" inside the PendingInfo modal via handleResendFromRegister
+                } else if (err.code === 'auth/weak-password') {
+                    setError("Mật khẩu quá yếu. Vui lòng sử dụng ít nhất 6 ký tự.");
+                } else if (err.code === 'auth/invalid-email') {
+                    setError("Địa chỉ email không hợp lệ.");
                 } else {
-                    setError(`Đăng ký thất bại (${errorCode}). Vui lòng thử lại.`);
+                    setError(`Đăng ký thất bại: ${err.message || "Lỗi không xác định"}`);
                 }
+            } finally {
+                setIsLoading(false);
             }
         }
-
-        setIsLoading(false);
     };
-    
-    const handlePasswordReset = async () => {
+
+    const handleResetPassword = async () => {
         if (!email) {
-            setError("Vui lòng nhập email của bạn để tiến hành đặt lại mật khẩu.");
+            setError("Vui lòng nhập email để đặt lại mật khẩu.");
             return;
         }
         setIsLoading(true);
         setError(null);
         setMessage(null);
         try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage("Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn.");
+             // Config URL to redirect back to app after password reset
+             const actionCodeSettings = {
+                url: `${window.location.origin}${window.location.pathname}`,
+                handleCodeInApp: true,
+            };
+            await sendPasswordResetEmail(auth, email, actionCodeSettings);
+            setMessage("Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.");
         } catch (err: any) {
-            console.error("Password reset error:", err);
-             if (err.code === 'auth/user-not-found') {
-                setError('Không tìm thấy tài khoản nào với địa chỉ email này.');
+            console.error("Reset password error:", err);
+            if (err.code === 'auth/user-not-found') {
+                 setError("Không tìm thấy tài khoản với email này.");
             } else {
-                setError("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.");
+                 setError("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.");
             }
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-    }
+    };
 
     return (
-         <div className="min-h-screen text-slate-300 flex items-center justify-center p-4">
-            {showPendingInfo && (
-                <div 
-                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in"
-                    role="dialog"
-                    aria-modal="true"
-                >
-                    <style>
-                        {`@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}
-                    </style>
-                    <div className="w-full max-w-md">
-                        <Panel>
-                            <div className="flex flex-col space-y-4 text-center">
-                                <h2 className="text-xl font-bold text-white">Thông báo</h2>
-                                <p className="text-slate-300">
-                                    {pendingInfoMessage}
-                                </p>
-                                <div className="pt-4">
-                                    {isEmailInUse ? (
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <button 
-                                                onClick={handleResendFromRegister}
-                                                disabled={isLoading}
-                                                className="flex-1 px-6 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
-                                            >
-                                                Gửi lại email xác thực
-                                            </button>
-                                            <button 
-                                                onClick={handleClosePendingInfo}
-                                                className="flex-1 px-6 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
-                                            >
-                                                Đã hiểu
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button 
-                                            onClick={handleClosePendingInfo}
-                                            className="w-full px-6 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
-                                        >
-                                            Đã hiểu
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </Panel>
-                    </div>
-                </div>
-            )}
-            <main className="max-w-md w-full">
+        <div className="min-h-screen text-slate-300 flex items-center justify-center p-4">
+             <main className="max-w-md w-full">
                 <style>
                     {`@keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}
                 </style>
-                <div className="text-center mb-8">
-                    <h1 className="led-text-effect text-3xl sm:text-4xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.4)' }}>
-                        AI Photoshoot
-                    </h1>
-                    <h2 className="text-xl font-bold text-slate-100 mt-4">Biến Ý Tưởng Thành Tuyệt Tác</h2>
-                    <p className="mt-2 text-slate-400 text-sm">Đăng nhập hoặc đăng ký để bắt đầu tạo ảnh chuyên nghiệp với AI.</p>
-                </div>
                 <Panel className="animate-fade-in">
-                     <div className="p-1 bg-slate-900 rounded-lg flex space-x-2 shadow-lg mb-6">
-                        <button 
+                    <div className="text-center mb-8">
+                        <h1 className="led-text-effect text-4xl font-black tracking-wider uppercase mb-2" style={{ textShadow: '0 0 15px rgba(52, 211, 153, 0.5)' }}>
+                            AI Photoshoot
+                        </h1>
+                        <p className="text-slate-400 text-sm">Sáng tạo hình ảnh chuyên nghiệp với sức mạnh AI</p>
+                    </div>
+
+                    {/* Pending Info Modal / Overlay */}
+                    {showPendingInfo && (
+                         <div className="absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+                            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 text-emerald-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Thông báo</h3>
+                            <p className="text-slate-300 mb-6">{pendingInfoMessage}</p>
+                            
+                            <div className="flex flex-col w-full space-y-3">
+                                {pendingInfoMessage.includes("Email này đã được đăng ký") ? (
+                                     <button 
+                                        onClick={handleResendFromRegister}
+                                        disabled={isLoading}
+                                        className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                                    >
+                                        {isLoading ? 'Đang xử lý...' : 'Gửi lại Email Xác thực & Đăng nhập'}
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={handleClosePendingInfo}
+                                        className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                                    >
+                                        Đã hiểu, quay lại Đăng nhập
+                                    </button>
+                                )}
+                                
+                                {pendingInfoMessage.includes("Email này đã được đăng ký") && (
+                                    <button 
+                                        onClick={handleClosePendingInfo}
+                                        className="text-sm text-slate-400 hover:text-white"
+                                    >
+                                        Hủy bỏ
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex mb-6 bg-slate-900/50 p-1 rounded-lg">
+                        <button
+                            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${isLogin ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                             onClick={() => handleTabChange(true)}
-                            className={`flex-1 px-6 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${isLogin ? 'bg-emerald-500 text-white shadow-glow-green' : 'text-slate-300 hover:bg-slate-700'}`}
-                            aria-pressed={isLogin}
                         >
                             Đăng nhập
                         </button>
-                        <button 
+                        <button
+                            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${!isLogin ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                             onClick={() => handleTabChange(false)}
-                            className={`flex-1 px-6 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${!isLogin ? 'bg-emerald-500 text-white shadow-glow-green' : 'text-slate-300 hover:bg-slate-700'}`}
-                            aria-pressed={!isLogin}
                         >
                             Đăng ký
                         </button>
                     </div>
-                    <form onSubmit={handleAuthAction} className="flex flex-col space-y-6">
-                        
-                        {error && (
-                             <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm" role="alert">
-                                {error}
-                            </div>
-                        )}
-                        {message && (
-                            <div className="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-3 rounded-lg text-sm" role="alert">
-                                {message}
-                            </div>
-                        )}
 
+                    {error && (
+                        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm mb-4 break-words" role="alert">
+                            {error}
+                        </div>
+                    )}
+                    {message && (
+                        <div className="bg-green-900/50 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-sm mb-4 break-words" role="alert">
+                            {message}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleAuthAction} className="space-y-4">
                         {!isLogin && (
-                             <>
-                                <div>
-                                    <label htmlFor="avatar-upload" className="block text-sm font-medium text-slate-300 mb-2">Ảnh đại diện (Tùy chọn)</label>
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <div className="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => avatarInputRef.current?.click()}>
-                                                {avatarPreview ? (
-                                                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover rounded-full"/>
-                                                ) : (
-                                                    <UploadIcon className="text-slate-500" />
-                                                )}
-                                            </div>
-                                             <input
-                                                id="avatar-upload"
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-300">Tên hiển thị</label>
+                                    <input
+                                        type="text"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                        placeholder="VD: Minh Tuấn"
+                                        required={!isLogin}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                     <label className="text-sm font-medium text-slate-300">Ảnh đại diện (Tùy chọn)</label>
+                                     <div className="flex items-center space-x-4">
+                                        <div 
+                                            className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
+                                            onClick={() => avatarInputRef.current?.click()}
+                                        >
+                                            {avatarPreview ? (
+                                                <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UploadIcon className="text-slate-500" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <input
                                                 type="file"
                                                 ref={avatarInputRef}
                                                 onChange={handleAvatarChange}
                                                 className="hidden"
-                                                accept="image/png, image/jpeg, image/webp"
+                                                accept="image/*"
                                             />
-                                        </div>
-                                        <div>
-                                            <button type="button" onClick={() => avatarInputRef.current?.click()} className="px-4 py-2 text-sm font-semibold bg-slate-700/80 hover:bg-slate-600 text-white rounded-lg transition-colors shadow-md">
-                                                Chọn ảnh
+                                            <button
+                                                type="button"
+                                                onClick={() => avatarInputRef.current?.click()}
+                                                className="text-sm text-emerald-400 hover:text-emerald-300 font-medium block"
+                                            >
+                                                Tải ảnh lên
                                             </button>
-                                            {avatarFile && (
-                                                <button type="button" onClick={handleRemoveAvatar} className="ml-2 text-xs text-slate-400 hover:text-red-400 transition-colors">
+                                            {avatarPreview && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveAvatar}
+                                                    className="text-xs text-red-400 hover:text-red-300 mt-1 block"
+                                                >
                                                     Xóa ảnh
                                                 </button>
                                             )}
+                                            <p className="text-xs text-slate-500 mt-1">Tối đa 5MB</p>
                                         </div>
-                                    </div>
+                                     </div>
                                 </div>
-                                <div>
-                                    <label htmlFor="displayName-input" className="block text-sm font-medium text-slate-300 mb-2">
-                                        Tên hiển thị
-                                    </label>
-                                    <input
-                                        id="displayName-input"
-                                        type="text"
-                                        value={displayName}
-                                        onChange={(e) => setDisplayName(e.target.value)}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                        placeholder="Tên của bạn"
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                </div>
-                             </>
+                            </>
                         )}
 
-
-                        <div>
-                            <label htmlFor="email-input" className="block text-sm font-medium text-slate-300 mb-2">
-                                Email
-                            </label>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-300">Email</label>
                             <input
-                                id="email-input"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                placeholder="email@example.com"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                placeholder="example@email.com"
                                 required
-                                disabled={isLoading}
                             />
                         </div>
-                         <div>
-                            <label htmlFor="password-input" className="block text-sm font-medium text-slate-300 mb-2">
-                                Mật khẩu
-                            </label>
+
+                        <div className="space-y-1">
+                            <div className="flex justify-between">
+                                <label className="text-sm font-medium text-slate-300">Mật khẩu</label>
+                                {isLogin && (
+                                    <button 
+                                        type="button"
+                                        onClick={handleResetPassword}
+                                        className="text-xs text-emerald-400 hover:underline"
+                                    >
+                                        Quên mật khẩu?
+                                    </button>
+                                )}
+                            </div>
                             <input
-                                id="password-input"
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                                 placeholder="••••••••"
                                 required
-                                disabled={isLoading}
                             />
                         </div>
-                        
-                        {isLogin && (
-                             <div className="text-right text-sm -mt-2">
-                                <button type="button" onClick={handlePasswordReset} className="text-emerald-400 hover:underline" disabled={isLoading}>
-                                    Quên mật khẩu?
-                                </button>
-                            </div>
-                        )}
 
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-lg shadow-lg hover:shadow-glow-green disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-slate-500 transition-all duration-300 flex items-center justify-center"
+                            className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-lg shadow-lg hover:shadow-glow-green disabled:bg-slate-700 disabled:text-slate-500 transition-all duration-300 mt-6"
                         >
-                            {isLoading && (
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                            {isLoading ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Đang xử lý...
+                                </span>
+                            ) : (
+                                isLogin ? 'Đăng nhập' : 'Đăng ký ngay'
                             )}
-                            {isLoading ? 'Đang xử lý...' : (isLogin ? 'Tiếp tục Sáng tạo' : 'Bắt đầu Miễn phí')}
                         </button>
                     </form>
                 </Panel>
