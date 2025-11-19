@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     createUserWithEmailAndPassword, 
@@ -5,7 +6,7 @@ import {
     sendEmailVerification,
     sendPasswordResetEmail,
     updateProfile,
-    fetchSignInMethodsForEmail
+    AuthError
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -50,7 +51,7 @@ export const AuthManager: React.FC = () => {
             }
             // Show the pending approval message
             setPendingInfoMessage("Email của bạn đã được xác thực thành công! Tài khoản của bạn hiện đang chờ quản trị viên phê duyệt.");
-            setIsEmailInUse(false); // This is for a different flow, should be false here.
+            setIsEmailInUse(false); 
             setShowPendingInfo(true);
 
             // Clean up URL to prevent the modal from showing up on refresh
@@ -203,10 +204,13 @@ export const AuthManager: React.FC = () => {
                 // onAuthStateChanged in App.tsx will handle the rest
             } catch (err: any) {
                 console.error("Login error:", err);
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                const errorCode = err.code;
+                if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
                     setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
+                } else if (errorCode === 'auth/too-many-requests') {
+                    setError('Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau hoặc đặt lại mật khẩu.');
                 } else {
-                    setError('Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
+                    setError('Đăng nhập không thành công. Vui lòng kiểm tra đường truyền.');
                 }
             }
         } else {
@@ -223,83 +227,70 @@ export const AuthManager: React.FC = () => {
             }
 
             try {
-                // Proactively check if the email exists.
-                const methods = await fetchSignInMethodsForEmail(auth, email);
-                if (methods.length > 0) {
-                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
-                    setIsEmailInUse(true);
-                    setShowPendingInfo(true);
-                    setIsLoading(false);
-                    return; 
-                }
-
-                // **CRITICAL STEPS**
-                // Step 1: Create user in Firebase Auth.
+                // 1. Create User in Firebase Auth directly.
+                // We DO NOT use fetchSignInMethodsForEmail anymore as it is blocked by strict security policies.
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // Step 2: Create Firestore document immediately.
+                // 2. Create Firestore document immediately (Vital Step).
+                // Using merge: true to be safe against partial writes.
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: user.email,
                     displayName: displayName,
-                    photoURL: null, // Start with null, will update if avatar succeeds
+                    photoURL: null, 
                     role: 'user',
                     status: 'pending',
                     createdAt: serverTimestamp()
-                });
+                }, { merge: true });
                 
-                // **NON-CRITICAL STEPS (Proceed even if they fail)**
-                // These steps happen after the user is successfully created.
-                // We show the success modal regardless of their outcome.
-                
-                let photoURL: string | null = null;
-                if (avatarFile) {
-                    try {
+                // 3. Optional Steps (Avatar & Profile Update)
+                // We wrap this in a try/catch block so if image upload fails, the account is NOT broken.
+                try {
+                    let photoURL: string | null = null;
+                    if (avatarFile) {
                         const avatarRef = ref(storage, `avatars/${user.uid}`);
                         await uploadBytes(avatarRef, avatarFile);
                         photoURL = await getDownloadURL(avatarRef);
-                        // Update just the photoURL in Firestore
+                        // Update Firestore with photoURL
                         await updateDoc(doc(db, "users", user.uid), { photoURL: photoURL });
-                    } catch (uploadError) {
-                        console.warn("Avatar upload failed during registration but user was created.", uploadError);
                     }
-                }
 
-                try {
-                     await updateProfile(user, {
+                    await updateProfile(user, {
                         displayName: displayName,
                         photoURL: photoURL
                     });
-                } catch(profileError) {
-                    console.warn("Updating Auth profile failed but user was created.", profileError);
+                } catch (secondaryError) {
+                    console.warn("Non-critical error during registration (avatar/profile):", secondaryError);
+                    // We continue, because the account is valid.
                 }
 
+                // 4. Send Verification Email
                 try {
                     const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
                     await sendEmailVerification(user, { url: continueUrl });
                 } catch (emailError) {
-                     console.warn("Sending verification email failed but user was created.", emailError);
-                     // You could potentially update the UI to inform the user about the email failure here
-                     // but for now, we prioritize showing the main success message.
+                     console.warn("Sending verification email warning:", emailError);
                 }
 
-                // **FINAL STEP: ALWAYS SHOW SUCCESS MODAL**
+                // 5. Success UI
                 setPendingInfoMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
                 setIsEmailInUse(false);
                 setShowPendingInfo(true);
 
             } catch (err: any) {
-                console.error("Critical Registration error:", err);
-                if (err.code === 'auth/email-already-in-use') {
-                    // This case should be caught by the proactive check, but is here as a fallback.
-                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực (nếu bạn chưa làm) và chờ quản trị viên phê duyệt. Nếu tài khoản đã được duyệt, bạn có thể đăng nhập.");
+                console.error("Registration error:", err);
+                const errorCode = err.code;
+                if (errorCode === 'auth/email-already-in-use') {
+                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực hoặc thử đăng nhập.");
                     setIsEmailInUse(true);
                     setShowPendingInfo(true);
-                } else if (err.code === 'auth/invalid-email') {
+                } else if (errorCode === 'auth/invalid-email') {
                     setError('Địa chỉ email không hợp lệ.');
+                } else if (errorCode === 'auth/weak-password') {
+                    setError('Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.');
                 } else {
-                    setError('Đăng ký không thành công do có lỗi nghiêm trọng xảy ra. Vui lòng thử lại.');
+                    setError('Đăng ký không thành công. Vui lòng kiểm tra kết nối mạng và thử lại.');
                 }
             }
         }

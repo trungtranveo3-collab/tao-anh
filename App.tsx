@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
@@ -146,58 +145,58 @@ function App() {
         if (currentUser && currentUser.emailVerified) {
             setUser(currentUser);
             const userDocRef = doc(db, 'users', currentUser.uid);
-            const userDocSnap = await getDoc(userDocRef);
+            
+            try {
+                const userDocSnap = await getDoc(userDocRef);
 
-            if (userDocSnap.exists()) {
-                const profile = userDocSnap.data() as UserProfile;
+                if (userDocSnap.exists()) {
+                    const profile = userDocSnap.data() as UserProfile;
 
-                // Check for account expiration
-                if (profile.status === 'approved' && profile.expiresAt) {
-                    const expirationDate = profile.expiresAt.toDate();
-                    if (expirationDate < new Date()) {
-                        // Account has expired, revert status to pending
-                        await updateDoc(userDocRef, { status: 'pending' });
+                    // Check for account expiration
+                    if (profile.status === 'approved' && profile.expiresAt) {
+                        const expirationDate = profile.expiresAt.toDate();
+                        if (expirationDate < new Date()) {
+                            // Account has expired, revert status to pending
+                            await updateDoc(userDocRef, { status: 'pending' });
+                            setUserProfile(null);
+                            setIsPendingApproval(true);
+                            setIsAuthLoading(false);
+                            return; // Stop further execution
+                        }
+                    }
+                    
+                    // Continue with normal status check
+                    if (profile.status === 'approved') {
+                        setUserProfile(profile);
+                        setIsPendingApproval(false);
+                    } else {
                         setUserProfile(null);
                         setIsPendingApproval(true);
-                        setIsAuthLoading(false);
-                        return; // Stop further execution
                     }
-                }
-                
-                // Continue with normal status check
-                if (profile.status === 'approved') {
-                    setUserProfile(profile);
-                    setIsPendingApproval(false);
                 } else {
-                    setUserProfile(null);
-                    setIsPendingApproval(true);
-                }
-            } else {
-                // Self-healing: User exists in Auth, is verified, but has no Firestore doc.
-                // This likely happened due to an interrupted registration. Create a doc for them now.
-                console.warn(`User data not found in Firestore for UID: ${currentUser.uid}. Creating a default profile.`);
-                try {
-                    await setDoc(doc(db, 'users', currentUser.uid), {
+                    // Self-healing: User exists in Auth, is verified, but has no Firestore doc.
+                    console.warn(`User data not found in Firestore for UID: ${currentUser.uid}. Creating a default profile.`);
+                    const newProfile = {
                         uid: currentUser.uid,
-                        email: currentUser.email,
-                        displayName: currentUser.displayName || 'New User', // Use Auth display name or a fallback
+                        email: currentUser.email || '',
+                        displayName: currentUser.displayName || 'New User',
                         photoURL: currentUser.photoURL || null,
                         role: 'user',
-                        status: 'pending', // Force pending status for admin review
+                        status: 'pending',
                         createdAt: serverTimestamp(),
-                    });
-                    // After creating the doc, treat them as a new pending user.
+                    };
+                    await setDoc(doc(db, 'users', currentUser.uid), newProfile);
+                    // After creating, set state to pending
                     setUserProfile(null);
                     setIsPendingApproval(true);
-                } catch (creationError) {
-                    console.error("Failed to self-heal and create Firestore user document. Logging out.", creationError);
-                    // If we can't create the doc, log them out to prevent a broken state.
-                    await signOut(auth);
-                    // Explicitly clear state to be safe
-                    setUser(null);
-                    setUserProfile(null);
-                    setIsPendingApproval(false);
                 }
+            } catch (err) {
+                console.error("Error fetching user profile:", err);
+                // IMPORTANT: Do NOT sign out on fetch error (it might be just network)
+                // Instead, show a safe fallback or retry message.
+                // For now, we keep them logged in but maybe restrict access or try to reload.
+                setError("Không thể tải thông tin hồ sơ. Vui lòng kiểm tra kết nối mạng.");
+                setIsPendingApproval(true); // Safer default than blocking entirely
             }
         } else {
             setUser(null);
@@ -718,7 +717,7 @@ localStorage.removeItem(LOCAL_STORAGE_KEY);
   }
 
   if (!userProfile) {
-      // This state should ideally not be reached if logic is correct, but it's a safe fallback.
+      // Ideally logic handles this in useEffect, but fallback to AuthManager just in case
       return <AuthManager />;
   }
 
