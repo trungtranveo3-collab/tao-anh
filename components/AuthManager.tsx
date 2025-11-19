@@ -5,8 +5,7 @@ import {
     signInWithEmailAndPassword,
     sendEmailVerification,
     sendPasswordResetEmail,
-    updateProfile,
-    AuthError
+    updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -72,6 +71,11 @@ export const AuthManager: React.FC = () => {
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setError("Kích thước ảnh quá lớn (Max 5MB).");
+                return;
+            }
             setAvatarFile(file);
             if (avatarPreview) {
                 URL.revokeObjectURL(avatarPreview);
@@ -162,10 +166,11 @@ export const AuthManager: React.FC = () => {
         setMessage(null);
 
         if (isLogin) {
-            // Handle Login
+            // === LOGIN LOGIC ===
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 if (!userCredential.user.emailVerified) {
+                    // Nếu chưa xác thực, hiển thị thông báo và option gửi lại
                     const resendVerification = async () => {
                         setIsLoading(true);
                         setMessage(null);
@@ -201,20 +206,22 @@ export const AuthManager: React.FC = () => {
                     setIsLoading(false);
                     return;
                 }
-                // onAuthStateChanged in App.tsx will handle the rest
+                // Thành công -> App.tsx sẽ tự động xử lý chuyển trang
             } catch (err: any) {
                 console.error("Login error:", err);
                 const errorCode = err.code;
                 if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
                     setError('Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
                 } else if (errorCode === 'auth/too-many-requests') {
-                    setError('Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau hoặc đặt lại mật khẩu.');
+                    setError('Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.');
+                } else if (errorCode === 'auth/network-request-failed') {
+                    setError('Lỗi kết nối mạng. Vui lòng kiểm tra internet.');
                 } else {
-                    setError('Đăng nhập không thành công. Vui lòng kiểm tra đường truyền.');
+                    setError(`Đăng nhập không thành công (${errorCode}).`);
                 }
             }
         } else {
-            // Handle Register
+            // === REGISTER LOGIC ===
             if (password.length < 6) {
                 setError("Mật khẩu phải chứa ít nhất 6 ký tự.");
                 setIsLoading(false);
@@ -227,45 +234,46 @@ export const AuthManager: React.FC = () => {
             }
 
             try {
-                // 1. Create User in Firebase Auth directly.
-                // We DO NOT use fetchSignInMethodsForEmail anymore as it is blocked by strict security policies.
+                // BƯỚC 1: Tạo User Auth trước. 
+                // Nếu email trùng, nó sẽ throw lỗi ngay tại đây -> nhảy xuống catch.
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // 2. Create Firestore document immediately (Vital Step).
-                // Using merge: true to be safe against partial writes.
+                // BƯỚC 2: Cập nhật Profile Auth cơ bản
+                await updateProfile(user, {
+                    displayName: displayName
+                }).catch(e => console.warn("Update profile failed", e));
+
+                // BƯỚC 3: Tạo Firestore Document (QUAN TRỌNG NHẤT)
+                // Dùng setDoc với merge: true để đảm bảo an toàn
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: user.email,
                     displayName: displayName,
-                    photoURL: null, 
+                    photoURL: null, // Sẽ cập nhật sau nếu upload thành công
                     role: 'user',
                     status: 'pending',
                     createdAt: serverTimestamp()
                 }, { merge: true });
                 
-                // 3. Optional Steps (Avatar & Profile Update)
-                // We wrap this in a try/catch block so if image upload fails, the account is NOT broken.
-                try {
-                    let photoURL: string | null = null;
-                    if (avatarFile) {
+                // BƯỚC 4: Upload Avatar (Nếu có)
+                // Chúng ta bọc trong try/catch riêng để nếu upload lỗi thì user vẫn được tạo thành công
+                if (avatarFile) {
+                    try {
                         const avatarRef = ref(storage, `avatars/${user.uid}`);
                         await uploadBytes(avatarRef, avatarFile);
-                        photoURL = await getDownloadURL(avatarRef);
-                        // Update Firestore with photoURL
+                        const photoURL = await getDownloadURL(avatarRef);
+                        
+                        // Cập nhật lại Firestore và Auth Profile
                         await updateDoc(doc(db, "users", user.uid), { photoURL: photoURL });
+                        await updateProfile(user, { photoURL: photoURL });
+                    } catch (uploadErr) {
+                        console.error("Avatar upload failed, continuing registration:", uploadErr);
+                        // Không return lỗi ở đây, cho phép quy trình hoàn tất
                     }
-
-                    await updateProfile(user, {
-                        displayName: displayName,
-                        photoURL: photoURL
-                    });
-                } catch (secondaryError) {
-                    console.warn("Non-critical error during registration (avatar/profile):", secondaryError);
-                    // We continue, because the account is valid.
                 }
 
-                // 4. Send Verification Email
+                // BƯỚC 5: Gửi Email Xác thực
                 try {
                     const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
                     await sendEmailVerification(user, { url: continueUrl });
@@ -273,7 +281,7 @@ export const AuthManager: React.FC = () => {
                      console.warn("Sending verification email warning:", emailError);
                 }
 
-                // 5. Success UI
+                // BƯỚC 6: Hiển thị thành công
                 setPendingInfoMessage("Đăng ký thành công! Một email xác thực đã được gửi đến bạn. Vui lòng xác thực và chờ quản trị viên phê duyệt tài khoản.");
                 setIsEmailInUse(false);
                 setShowPendingInfo(true);
@@ -281,16 +289,20 @@ export const AuthManager: React.FC = () => {
             } catch (err: any) {
                 console.error("Registration error:", err);
                 const errorCode = err.code;
+                
                 if (errorCode === 'auth/email-already-in-use') {
-                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra email để xác thực hoặc thử đăng nhập.");
+                    // Đây là nơi bắt lỗi nếu email đã tồn tại
+                    setPendingInfoMessage("Email này đã được đăng ký. Vui lòng kiểm tra hộp thư để xác thực hoặc đăng nhập.");
                     setIsEmailInUse(true);
                     setShowPendingInfo(true);
                 } else if (errorCode === 'auth/invalid-email') {
                     setError('Địa chỉ email không hợp lệ.');
                 } else if (errorCode === 'auth/weak-password') {
-                    setError('Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.');
+                    setError('Mật khẩu quá yếu.');
+                } else if (errorCode === 'auth/network-request-failed') {
+                     setError('Lỗi kết nối mạng. Không thể liên hệ máy chủ.');
                 } else {
-                    setError('Đăng ký không thành công. Vui lòng kiểm tra kết nối mạng và thử lại.');
+                    setError(`Đăng ký thất bại (${errorCode}). Vui lòng thử lại.`);
                 }
             }
         }

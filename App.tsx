@@ -144,6 +144,9 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser && currentUser.emailVerified) {
             setUser(currentUser);
+            // Clear previous errors when state changes
+            setError(null); 
+            
             const userDocRef = doc(db, 'users', currentUser.uid);
             
             try {
@@ -174,8 +177,9 @@ function App() {
                         setIsPendingApproval(true);
                     }
                 } else {
-                    // Self-healing: User exists in Auth, is verified, but has no Firestore doc.
-                    console.warn(`User data not found in Firestore for UID: ${currentUser.uid}. Creating a default profile.`);
+                    // SELF-HEALING: User exists in Auth but NO Firestore doc.
+                    // This happens if registration failed halfway due to network.
+                    console.warn(`Fixing missing Firestore profile for: ${currentUser.uid}`);
                     const newProfile = {
                         uid: currentUser.uid,
                         email: currentUser.email || '',
@@ -185,20 +189,27 @@ function App() {
                         status: 'pending',
                         createdAt: serverTimestamp(),
                     };
+                    // Force create the missing doc
                     await setDoc(doc(db, 'users', currentUser.uid), newProfile);
-                    // After creating, set state to pending
+                    
+                    // Set state to pending so they see the approval screen
                     setUserProfile(null);
                     setIsPendingApproval(true);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Error fetching user profile:", err);
-                // IMPORTANT: Do NOT sign out on fetch error (it might be just network)
-                // Instead, show a safe fallback or retry message.
-                // For now, we keep them logged in but maybe restrict access or try to reload.
-                setError("Không thể tải thông tin hồ sơ. Vui lòng kiểm tra kết nối mạng.");
-                setIsPendingApproval(true); // Safer default than blocking entirely
+                // IMPORTANT: If network fails, DON'T log them out. 
+                // Just show a retryable error state or keep loading.
+                if (err.code === 'unavailable' || err.message?.includes('offline')) {
+                     setError("Mất kết nối mạng. Đang thử kết nối lại...");
+                     // Keep user object so we don't flash the login screen
+                } else {
+                     setError("Có lỗi khi tải thông tin. Vui lòng tải lại trang.");
+                }
+                setIsPendingApproval(true); // Safe default to prevent unauthorized access
             }
         } else {
+            // Not logged in or email not verified
             setUser(null);
             setUserProfile(null);
             setIsPendingApproval(false);
@@ -275,7 +286,7 @@ function App() {
           }
           setAi(null);
           sessionStorage.removeItem(SESSION_STORAGE_KEY);
-localStorage.removeItem(LOCAL_STORAGE_KEY);
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
       } finally {
           setIsVerifyingKey(false);
       }
