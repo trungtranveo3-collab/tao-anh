@@ -1,5 +1,4 @@
 
-
 import React, { useCallback, useRef } from 'react';
 import { Panel } from './Panel';
 
@@ -45,7 +44,6 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ onFilesC
       event.preventDefault();
       event.stopPropagation();
       if (event.dataTransfer.files) {
-        // FIX: Explicitly type the 'file' parameter to ensure correct type inference.
         const newFiles = Array.from(event.dataTransfer.files).filter((file: File) => file.type.startsWith('image/'));
         onFilesChange([...files, ...newFiles].slice(0, 15)); // Max 15 files
       }
@@ -61,7 +59,7 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ onFilesC
   return (
     <Panel className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-slate-200 text-left">Bước 1: Tải Ảnh Gốc</h2>
+        <h2 className="text-lg font-bold text-slate-200 text-left">Bước 2: Chọn ảnh thành viên</h2>
         <p className="text-sm text-slate-400">{files.length} / 15</p>
       </div>
       <div className="flex-grow overflow-y-auto pr-2" onDrop={handleDrop} onDragOver={handleDragOver}>
@@ -92,7 +90,7 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ onFilesC
                   multiple
                 />
                 <UploadIcon />
-                <span className="text-sm mt-2 text-center">Thêm ảnh</span>
+                <span className="text-xs mt-2 text-center font-medium">Thêm người</span>
               </div>
           )}
         </div>

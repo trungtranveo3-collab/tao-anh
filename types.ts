@@ -1,9 +1,11 @@
+
 import type React from 'react';
 
 export interface Style {
   id: string;
   name: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }>; // Make optional as we prefer thumbnails now
+  thumbnail: string; // New field for visual preview
   category: string;
   prompt: string;
   startDate?: string; // YYYY-MM-DD

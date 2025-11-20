@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Style } from '../types';
 
@@ -23,63 +24,78 @@ export const TrendingStylesTab: React.FC<TrendingStylesTabProps> = ({ styles, se
         return today >= startDate && today <= endDate;
     });
 
-    // 2. Find upcoming trends and sort them by start date
+    // 2. Find upcoming trends
     const upcomingTrends = timeBasedTrends
         .filter(trend => parseDate(trend.startDate!) > today)
         .sort((a, b) => parseDate(a.startDate!).getTime() - parseDate(b.startDate!).getTime());
     
-    // 3. Find past trends and sort them by most recent end date
+    // 3. Find past trends
     const pastTrends = timeBasedTrends
         .filter(trend => parseDate(trend.endDate!) < today)
         .sort((a, b) => parseDate(b.endDate!).getTime() - parseDate(a.endDate!).getTime());
     
-    // 4. Build the final list to display, ensuring at least 5 items
+    // 4. Build the final list
     let displayTrends = [...activeTrends];
-
-    // Add upcoming trends if we need more
-    if (displayTrends.length < 5) {
-        const needed = 5 - displayTrends.length;
+    if (displayTrends.length < 6) {
+        const needed = 6 - displayTrends.length;
         displayTrends.push(...upcomingTrends.slice(0, needed));
     }
-    
-    // Add past trends if we still need more
-    if (displayTrends.length < 5) {
-        const needed = 5 - displayTrends.length;
+    if (displayTrends.length < 6) {
+        const needed = 6 - displayTrends.length;
         displayTrends.push(...pastTrends.slice(0, needed));
     }
 
-    // 5. Final fallback if there are no time-based trends at all.
+    // Fallback
     if (displayTrends.length === 0 && styles.length > 0) {
-        // Just show the first 5 styles from the list.
-        displayTrends = styles.slice(0, 5);
+        displayTrends = styles.slice(0, 6);
     }
     
-    // The empty state message, should rarely be seen now.
     if (displayTrends.length === 0) {
         return (
             <div className="flex items-center justify-center h-[300px] text-center text-slate-400">
-                <p>Không tìm thấy trend nào. <br/> Vui lòng kiểm tra lại cấu hình.</p>
+                <p>Không tìm thấy trend nào.</p>
             </div>
         );
     }
 
     return (
-        <div className="flex-grow overflow-y-auto pr-2 max-h-[400px]">
-            <div className="grid grid-cols-2 gap-4">
+        <div className="flex-grow overflow-y-auto pr-2 max-h-[450px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {displayTrends.map(style => {
                     const isSelected = selectedStyle.id === style.id;
                     return (
                         <button
                             key={style.id}
                             onClick={() => onStyleSelect(style)}
-                            className={`flex flex-col items-center justify-center p-4 bg-slate-800 rounded-lg transition-all duration-200 transform hover:bg-slate-700 min-h-[100px] text-center ring-2 space-y-2 ${
-                                isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
+                            className={`group relative aspect-[3/4] rounded-xl overflow-hidden transition-all duration-300 ${
+                                isSelected ? 'ring-4 ring-emerald-500 shadow-lg shadow-emerald-500/30 scale-[1.02]' : 'hover:scale-[1.02] hover:ring-2 hover:ring-slate-500'
                             }`}
                         >
-                            <div className="text-emerald-400 flex-shrink-0">
-                                <style.icon className="w-8 h-8" />
+                            {/* Thumbnail Image */}
+                            <img 
+                                src={style.thumbnail} 
+                                alt={style.name}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            
+                            {/* Gradient Overlay */}
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 transition-opacity duration-300 ${isSelected ? 'opacity-90' : 'group-hover:opacity-90'}`} />
+
+                            {/* Checkmark Badge for Selected State */}
+                            {isSelected && (
+                                <div className="absolute top-3 right-3 bg-emerald-500 text-white rounded-full p-1 shadow-md animate-fade-in">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            )}
+
+                            {/* Text Content */}
+                            <div className="absolute bottom-0 left-0 right-0 p-4 text-left transform transition-transform duration-300 group-hover:translate-y-[-4px]">
+                                <h3 className={`font-bold text-white leading-tight ${isSelected ? 'text-emerald-300' : ''}`}>
+                                    {style.name}
+                                </h3>
                             </div>
-                            <span className="text-sm font-medium text-slate-200">{style.name}</span>
                         </button>
                     );
                 })}

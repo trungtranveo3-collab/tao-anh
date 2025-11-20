@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Style } from '../types';
 
@@ -27,76 +28,101 @@ export const CustomPromptTab: React.FC<CustomPromptTabProps> = ({
     onToggle
 }) => {
     return (
-        <div className="flex flex-col space-y-4 h-full">
-            <div>
-                <label htmlFor="custom-prompt" className="block text-sm font-medium text-slate-300 mb-2">
-                    {label}
-                </label>
-                <input
-                    type="text"
-                    id="custom-prompt"
-                    value={promptValue}
-                    onChange={(e) => onPromptChange(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                    placeholder={placeholder}
-                    aria-label="Custom prompt input"
-                />
-            </div>
-
-            <div className="flex items-center justify-center gap-4">
-                <span className={`text-sm font-medium transition-colors ${!isCustomPromptActive ? 'text-emerald-400' : 'text-slate-500'}`}>Gợi ý</span>
-                <label htmlFor={`custom-prompt-toggle-${label.substring(0,5)}`} className="flex items-center cursor-pointer select-none">
-                    <div className="relative">
-                        <input
-                            type="checkbox"
-                            id={`custom-prompt-toggle-${label.substring(0,5)}`}
-                            className="sr-only peer"
-                            checked={isCustomPromptActive}
-                            onChange={() => onToggle(!isCustomPromptActive)}
-                        />
-                        <div className="block bg-slate-900 border border-slate-700 w-14 h-8 rounded-full peer-checked:bg-emerald-500/50 peer-checked:border-emerald-500 transition-colors"></div>
-                        <div className={`dot absolute left-1 top-1 bg-slate-500 w-6 h-6 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-full peer-checked:bg-emerald-400`}></div>
+        <div className="flex flex-col space-y-6 h-full">
+             {/* Custom Input Area */}
+             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between mb-3">
+                     <label htmlFor="custom-prompt" className="text-sm font-bold text-emerald-400 uppercase tracking-wider">
+                        {label}
+                    </label>
+                     <div className="flex items-center gap-3">
+                        <span className={`text-xs font-medium ${!isCustomPromptActive ? 'text-slate-400' : 'text-slate-600'}`}>Gợi ý</span>
+                        <label htmlFor="custom-prompt-toggle" className="flex items-center cursor-pointer select-none">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    id="custom-prompt-toggle"
+                                    className="sr-only peer"
+                                    checked={isCustomPromptActive}
+                                    onChange={() => onToggle(!isCustomPromptActive)}
+                                />
+                                <div className="block bg-slate-800 border border-slate-600 w-10 h-6 rounded-full peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-colors"></div>
+                                <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-full`}></div>
+                            </div>
+                        </label>
+                        <span className={`text-xs font-medium ${isCustomPromptActive ? 'text-emerald-400' : 'text-slate-600'}`}>Tùy chỉnh</span>
                     </div>
-                </label>
-                <span className={`text-sm font-medium transition-colors ${isCustomPromptActive ? 'text-emerald-400' : 'text-slate-500'}`}>Tùy chỉnh</span>
+                </div>
+
+                {isCustomPromptActive ? (
+                     <div className="relative">
+                        <input
+                            type="text"
+                            id="custom-prompt"
+                            value={promptValue}
+                            onChange={(e) => onPromptChange(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm"
+                            placeholder={placeholder}
+                            autoFocus
+                        />
+                         <div className="absolute right-3 top-3 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </div>
+                    </div>
+                ) : (
+                     <p className="text-xs text-slate-500 italic">Chọn một trong các gợi ý bên dưới để có kết quả tốt nhất.</p>
+                )}
             </div>
             
             {!isCustomPromptActive && (
-                <>
-                    <div className="relative flex items-center text-center">
-                        <div className="flex-grow border-t border-slate-700"></div>
-                        <span className="flex-shrink mx-4 text-slate-500 text-sm">hoặc chọn gợi ý</span>
-                        <div className="flex-grow border-t border-slate-700"></div>
-                    </div>
+                <div className="flex-grow overflow-y-auto pr-2 max-h-[400px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {styles.map(style => {
+                            const isSelected = selectedStyle.id === style.id && !promptValue;
+                            return (
+                                <button
+                                    key={style.id}
+                                    onClick={() => onStyleSelect(style)}
+                                    className={`group relative aspect-video rounded-lg overflow-hidden transition-all duration-200 text-left ${
+                                        isSelected ? 'ring-2 ring-emerald-500 scale-[1.02]' : 'hover:scale-[1.02] ring-1 ring-slate-700/50'
+                                    }`}
+                                >
+                                     {/* Image Background */}
+                                     <img 
+                                        src={style.thumbnail} 
+                                        alt={style.name}
+                                        className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500"
+                                        loading="lazy"
+                                    />
+                                    
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
 
-                    <div className="flex-grow overflow-y-auto pr-2 max-h-[300px]">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {styles.map(style => {
-                                const isSelected = selectedStyle.id === style.id && !promptValue;
-                                return (
-                                    <button
-                                        key={style.id}
-                                        onClick={() => {
-                                            onStyleSelect(style);
-                                        }}
-                                        className={`flex items-center p-3 bg-slate-800 rounded-lg transition-all duration-200 transform hover:bg-slate-700 min-h-[50px] text-left ring-2 ${
-                                            isStyleTab ? 'justify-start space-x-3' : 'justify-center text-center'
-                                        } ${
-                                            isSelected ? 'ring-emerald-400 scale-105' : 'ring-transparent hover:ring-slate-600'
-                                        }`}
-                                    >
+                                    {/* Content */}
+                                    <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+                                        <span className={`text-sm font-bold block truncate ${isSelected ? 'text-emerald-300' : 'text-white group-hover:text-emerald-200'}`}>
+                                            {style.name}
+                                        </span>
                                         {isStyleTab && (
-                                            <div className="text-emerald-400 flex-shrink-0">
-                                                <style.icon className="w-6 h-6" />
-                                            </div>
+                                             <span className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5 block">Phong cách</span>
                                         )}
-                                        <span className="text-xs sm:text-sm font-medium text-slate-200">{style.name}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                                    </div>
+
+                                    {/* Selection Indicator */}
+                                    {isSelected && (
+                                        <div className="absolute top-2 right-2 bg-emerald-500 rounded-full p-1 shadow-lg">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                </>
+                </div>
             )}
         </div>
     );

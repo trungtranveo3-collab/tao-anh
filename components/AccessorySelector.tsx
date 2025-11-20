@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Accessory } from '../types';
 import { ACCESSORY_CATEGORIES, COLOR_PALETTE, ACCESSORY_SUGGESTIONS } from '../constants';
@@ -14,7 +15,7 @@ export const AccessorySelector: React.FC<AccessorySelectorProps> = ({ accessorie
         <div className="border-t border-emerald-400/20 pt-6">
             <div className="flex justify-between items-center">
                 <label htmlFor="accessory-toggle" id="accessory-label" className="text-base font-bold text-slate-200 cursor-pointer">
-                    Thêm Trang phục & Phụ kiện (Tùy chọn)
+                    Bạn có muốn phối thêm phụ kiện không?
                 </label>
                 <label htmlFor="accessory-toggle" className="flex items-center cursor-pointer select-none">
                     <div className="relative">

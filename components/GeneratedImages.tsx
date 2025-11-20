@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Panel } from './Panel';
 
@@ -33,15 +34,18 @@ export const GeneratedImages: React.FC<GeneratedImagesProps> = ({
     onReuseSettings
 }) => {
     
-    // Determine the number of placeholders based on context
     const placeholderCount = isLoading ? (images.length > 0 ? images.length : 1) : 0;
 
     return (
         <Panel>
-            <h2 className="text-lg font-bold text-slate-200 mb-4 text-left">Kết quả</h2>
+            <h2 className="text-lg font-bold text-slate-200 mb-4 text-left">Thành quả của bạn</h2>
             {images.length === 0 && !isLoading && (
-                <div className="flex items-center justify-center h-80 bg-slate-800 rounded-lg">
-                    <p className="text-slate-500">Phép màu AI sẽ hiện ra ở đây!</p>
+                <div className="flex flex-col items-center justify-center h-80 bg-slate-800/50 rounded-lg border border-dashed border-slate-700">
+                    <div className="text-emerald-500 mb-3">
+                        <MagicWandIcon className="w-10 h-10" />
+                    </div>
+                    <p className="text-slate-400 font-medium">Chưa có tác phẩm nào.</p>
+                    <p className="text-slate-500 text-sm mt-1">Hãy nhấn "Tạo Tác Phẩm Ngay" để bắt đầu!</p>
                 </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[40rem] overflow-y-auto pr-2">

@@ -1,5 +1,4 @@
 
-
 import React, { useCallback, useRef } from 'react';
 import { Panel } from './Panel';
 
@@ -85,10 +84,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImagesChange, pr
                         </button>
                     </>
                 ) : (
-                    <div className="text-center text-slate-500">
+                    <div className="text-center text-slate-500 px-4">
                         <UploadIcon className="mx-auto text-slate-600" />
-                        <p className="mt-2 font-semibold">Kéo & thả hoặc Nhấn để tải lên</p>
-                        <p className="text-sm">PNG, JPG, WEBP. Tối đa 5MB.</p>
+                        <p className="mt-2 font-semibold text-emerald-400/90">Chạm để tải ảnh</p>
+                        <p className="text-xs mt-1 text-slate-400">Mẹo: Ảnh rõ mặt, ánh sáng tốt sẽ đẹp hơn nha!</p>
                     </div>
                 )}
             </div>

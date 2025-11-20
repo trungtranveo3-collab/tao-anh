@@ -178,7 +178,6 @@ function App() {
                     }
                 } else {
                     // SELF-HEALING: User exists in Auth but NO Firestore doc.
-                    // This happens if registration failed halfway due to network.
                     console.warn(`Fixing missing Firestore profile for: ${currentUser.uid}`);
                     const newProfile = {
                         uid: currentUser.uid,
@@ -198,11 +197,8 @@ function App() {
                 }
             } catch (err: any) {
                 console.error("Error fetching user profile:", err);
-                // IMPORTANT: If network fails, DON'T log them out. 
-                // Just show a retryable error state or keep loading.
                 if (err.code === 'unavailable' || err.message?.includes('offline')) {
                      setError("Mất kết nối mạng. Đang thử kết nối lại...");
-                     // Keep user object so we don't flash the login screen
                 } else {
                      setError("Có lỗi khi tải thông tin. Vui lòng tải lại trang.");
                 }
@@ -295,12 +291,11 @@ function App() {
   const handleLogout = async () => {
     try {
         await signOut(auth);
-        // The onAuthStateChanged listener will automatically set all user states to null
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
         localStorage.removeItem(LOCAL_STORAGE_KEY);
         setAi(null);
         setApiKeyError(null);
-        setShowAdminPanel(false); // Close admin panel on logout
+        setShowAdminPanel(false); 
     } catch (error) {
         console.error("Error signing out: ", error);
         setError("Đăng xuất không thành công. Vui lòng thử lại.");
@@ -309,8 +304,7 @@ function App() {
 
   const handleChangeApiKey = () => {
     setAi(null);
-    // Don't remove keys here, so the user can cancel and go back
-    setApiKeyError(null); // Clear any previous errors
+    setApiKeyError(null); 
   };
   
   const handleCancelChangeApiKey = useCallback(() => {
@@ -334,13 +328,9 @@ function App() {
 
   // Effect to update accessories when style changes
   useEffect(() => {
-    // FIX: Explicitly type `defaults` to resolve ambiguity from the union type.
     const defaults: Partial<Record<string, Accessory>> = STYLE_ACCESSORY_DEFAULTS[selectedStyle.id] || BASE_ACCESSORY_DEFAULTS;
     const initialAccessories: Record<string, Accessory> = {};
-    // FIX: Using Object.keys and direct property access for improved type safety,
-    // resolving an issue where Object.entries inferred an 'unknown' type for values.
     for (const key of Object.keys(defaults)) {
-      // FIX: Cast `accessory` to `Accessory | undefined` to resolve a type inference issue.
       const accessory = defaults[key] as Accessory | undefined;
       if (accessory && accessory.item) {
           initialAccessories[key] = { item: accessory.item, color: accessory.color || '' };
@@ -369,7 +359,7 @@ function App() {
         Promise.all(filePromises).then(setPreviews);
     } else {
         setPreviews([]);
-        if (activeTab !== 'wedding') { // Don't clear generated images when just one of the couple's photos is removed
+        if (activeTab !== 'wedding') { 
             setGeneratedImages([]);
         }
     }
@@ -380,7 +370,7 @@ function App() {
     const handleImagesChange = useCallback((files: File[]) => {
         setSourceImages(files);
         if (files.length === 0) {
-           setGeneratedImages([]); // Clear generated images when source is removed
+           setGeneratedImages([]); 
         }
   }, []);
 
@@ -415,16 +405,17 @@ function App() {
     return (weddingReady || otherReady) && !!ai;
   }, [sourceImages, coupleSourceImages, activeTab, ai]);
 
+  // Updated Tooltip Logic to be more friendly
   const disabledTooltip = useMemo(() => {
       if (isReady) return '';
-      if (!ai) return 'Vui lòng cung cấp API Key hợp lệ và nhấn "Lưu & Bắt đầu".';
+      if (!ai) return 'Bạn ơi, đừng quên nhập API Key nhé!';
       if (activeTab === 'wedding' && !coupleSourceImages.every(img => img !== null)) {
-          return 'Vui lòng tải lên đủ hai ảnh cho cặp đôi.';
+          return 'Vui lòng chọn đủ 2 ảnh cho cặp đôi nhé!';
       }
       if (activeTab !== 'wedding' && sourceImages.length === 0) {
-          return 'Vui lòng tải lên ít nhất một ảnh gốc.';
+          return 'Chưa có ảnh gốc nè! Tải ảnh lên đi bạn.';
       }
-      return 'Vui lòng hoàn thành các bước trên để bắt đầu.'; // A generic fallback
+      return 'Hãy hoàn thành các bước trên để bắt đầu nhé!'; 
   }, [isReady, ai, activeTab, coupleSourceImages, sourceImages]);
 
   // Construct the final prompt for the API
@@ -516,11 +507,11 @@ function App() {
         return;
     }
     if (currentSourceImages.length === 0) {
-      setError('Vui lòng tải lên ít nhất một hình ảnh.');
+      setError('Bạn chưa chọn ảnh gốc nào cả.');
       return;
     }
      if (activeTab === 'wedding' && currentSourceImages.length < 2) {
-      setError('Vui lòng tải lên đủ hai ảnh cho cặp đôi.');
+      setError('Cần 2 ảnh cho chế độ Ảnh Cưới bạn nhé.');
       return;
     }
     
@@ -536,7 +527,7 @@ function App() {
 
     try {
       const prompt = constructPrompt();
-      console.log("Final Prompt:", prompt); // For debugging
+      console.log("Final Prompt:", prompt); 
       const imageParts = await Promise.all(currentSourceImages.map(file => fileToGenerativePart(file)));
       
       const contents = {
@@ -566,7 +557,7 @@ function App() {
       }
 
       if (newImages.length === 0) {
-        setError("Không thể tạo ảnh. API không trả về hình ảnh. Vui lòng thử lại.");
+        setError("Không thể tạo ảnh. AI chưa trả về kết quả. Vui lòng thử lại nhé.");
         setGeneratedImages([]);
       } else {
         setGeneratedImages(newImages);
@@ -576,18 +567,18 @@ function App() {
       console.error(e);
       const errorMessage = e?.message?.toLowerCase() || '';
       if (errorMessage.includes('permission denied') || errorMessage.includes('api key not valid')) {
-        setApiKeyError('API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra và nhập lại.');
+        setApiKeyError('API Key không hợp lệ. Kiểm tra lại giúp mình nha.');
         setAi(null);
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
         localStorage.removeItem(LOCAL_STORAGE_KEY);
       } else if (errorMessage.includes('safety')) {
-        setError('Nội dung không phù hợp. Hình ảnh hoặc yêu cầu của bạn có thể đã vi phạm chính sách an toàn. Vui lòng thử một ảnh hoặc ý tưởng khác.');
+        setError('Nội dung không phù hợp. Thử một ảnh khác "lành mạnh" hơn xem sao?');
       } else if (errorMessage.includes('quota')) {
-        setError('Bạn đã hết lượt sử dụng miễn phí cho hôm nay. Vui lòng kiểm tra hạn ngạch trên tài khoản Google AI của bạn.');
+        setError('Hết lượt miễn phí hôm nay rồi. Mai quay lại nhé!');
       } else if (errorMessage.includes('fetch')) {
-         setError('Lỗi kết nối mạng. Vui lòng kiểm tra đường truyền internet và thử lại.');
+         setError('Mạng chập chờn quá. Kiểm tra Wifi rồi thử lại nha.');
       } else {
-        setError('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau một lát.');
+        setError('Có lỗi xíu xiu. Thử lại lần nữa xem sao.');
       }
       setGeneratedImages([]);
     } finally {
@@ -681,7 +672,6 @@ function App() {
     setIdPhotoBackground(settings.idPhotoBackground);
     setIdPhotoAttire(settings.idPhotoAttire);
 
-    // Activate custom prompt mode if any custom prompt has value
     setIsCustomPromptActive(
       !!settings.stylePrompt || !!settings.celebrityPrompt || !!settings.travelPrompt ||
       !!settings.panoramaPrompt || !!settings.productPrompt
@@ -697,15 +687,11 @@ function App() {
     ].map((_, i) => {
         const file = coupleSourceImages[i];
         if (!file) return undefined;
-        // This is a bit of a hack to find the right preview. A better approach would be to store previews with an ID.
-        // For now, let's just find the preview that corresponds to the file.
-        // This effect depends on the main preview generation effect.
         return previews[i];
     });
 
   }, [coupleSourceImages, previews]);
   
-  const uploaderDescription = "Ảnh gốc càng rõ nét, AI càng 'ảo diệu'!";
 
   if (isAuthLoading) {
     return (
@@ -728,13 +714,10 @@ function App() {
   }
 
   if (!userProfile) {
-      // Ideally logic handles this in useEffect, but fallback to AuthManager just in case
       return <AuthManager />;
   }
 
   if (!ai) {
-    // We determine if the user can close this screen. They can close if they are *changing* a key,
-    // which means a key must already exist in storage.
     const canClose = !!(localStorage.getItem(LOCAL_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY));
     return <ApiKeyManager 
               onApiKeySubmit={handleApiKeySubmit} 
@@ -747,34 +730,38 @@ function App() {
 
   return (
     <div className="min-h-screen text-slate-300">
-      <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
+       {/* HEADER */}
+       <header className="fixed top-0 left-0 right-0 z-40 bg-[#05140D]/80 backdrop-blur-md border-b border-emerald-500/20 px-4 py-3 shadow-lg transition-all duration-300">
+          <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                  <div>
+                      <h1 className="led-text-effect text-2xl sm:text-3xl font-black tracking-wider uppercase leading-none" style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.3)' }}>
+                          AI Photoshoot
+                      </h1>
+                      <p className="hidden sm:block text-xs text-slate-400 mt-1 tracking-wide opacity-80">
+                          Studio nhiếp ảnh AI chuyên nghiệp
+                      </p>
+                  </div>
+              </div>
+
+              <div className="flex-shrink-0">
+                  <UserMenu
+                      user={user}
+                      userProfile={userProfile}
+                      onLogout={handleLogout}
+                      onChangeApiKey={handleChangeApiKey}
+                      onShowAdminPanel={() => setShowAdminPanel(true)}
+                  />
+              </div>
+          </div>
+        </header>
+
+      {/* Main Content */}
+      <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8 pt-24 pb-32">
         {showAdminPanel && userProfile.role === 'admin' && (
             <AdminPanel onClose={() => setShowAdminPanel(false)} currentUserProfile={userProfile} />
         )}
         
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-12 pb-8 border-b border-emerald-400/20">
-            {/* Title and Subtitle */}
-            <div className="text-center sm:text-left">
-                <h1 className="led-text-effect text-5xl sm:text-6xl font-black tracking-wider uppercase" style={{ textShadow: '0 0 15px rgba(52, 211, 153, 0.5), 0 0 25px rgba(52, 211, 153, 0.3)' }}>
-                    AI Photoshoot
-                </h1>
-                <p className="mt-4 text-lg sm:text-xl text-slate-200 max-w-3xl mx-auto sm:mx-0 tracking-wide">
-                    Biến mọi bức ảnh thành kiệt tác chuyên nghiệp chỉ trong vài giây.
-                </p>
-            </div>
-
-            {/* User Controls */}
-            <div className="flex-shrink-0">
-                <UserMenu
-                    user={user}
-                    userProfile={userProfile}
-                    onLogout={handleLogout}
-                    onChangeApiKey={handleChangeApiKey}
-                    onShowAdminPanel={() => setShowAdminPanel(true)}
-                />
-            </div>
-        </header>
-
         {showGuide && <UsageGuide onDismiss={handleDismissGuide} />}
         
         {activeTab !== 'wedding' && activeTab !== 'product' && activeTab !== 'id_photo' && (
@@ -800,17 +787,17 @@ function App() {
 
         {error && (
             <div className="max-w-4xl mx-auto bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg relative mb-6" role="alert">
-                <strong className="font-bold">Lỗi! </strong>
+                <strong className="font-bold">Úi! </strong>
                 <span className="block sm:inline">{error}</span>
             </div>
         )}
 
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                {/* Step 1: Customize */}
+                {/* Step 1 */}
                 <div className="w-full">
                     <Panel className="flex flex-col space-y-8">
-                         <h2 className="text-lg font-bold text-slate-200 text-left">Bước 1: Lựa Chọn Sáng Tạo</h2>
+                         <h2 className="text-lg font-bold text-slate-200 text-left">Bước 1: Bạn muốn bức ảnh trông như thế nào?</h2>
                          <StyleSelector 
                             activeTab={activeTab}
                             onTabChange={handleTabChange}
@@ -840,7 +827,7 @@ function App() {
                     </Panel>
                 </div>
                 
-                {/* Step 2: Upload */}
+                {/* Step 2 */}
                  <div className="w-full">
                     {activeTab === 'wedding' ? (
                         <CoupleImageUploader
@@ -849,7 +836,7 @@ function App() {
                         />
                     ) : (mode === 'single' || ['product', 'id_photo'].includes(activeTab)) ? (
                         <ImageUploader 
-                            label="Bước 2: Cung Cấp 'Nguyên Liệu'"
+                            label="Bước 2: Chọn ảnh đẹp nhất của bạn"
                             onImagesChange={handleImagesChange} 
                             preview={previews[0]} 
                         />
@@ -863,7 +850,7 @@ function App() {
                 </div>
             </div>
 
-            {/* Step 3: Generate */}
+            {/* Step 3 */}
             <div>
                  <Panel>
                     <GenerationControls 

@@ -1,7 +1,7 @@
+
 import React from 'react';
 import type { ImageType, AspectRatio, IdPhotoSize, IdPhotoBackground, IdPhotoAttire } from '../types';
 import { IMAGE_TYPES, ASPECT_RATIOS, ID_PHOTO_SIZES, ID_PHOTO_BACKGROUNDS, ID_PHOTO_ATTIRES } from '../constants';
-// Removed Panel import as it's now handled by the parent in App.tsx
 
 interface GenerationControlsProps {
     activeTab: string;
@@ -76,13 +76,7 @@ export const GenerationControls: React.FC<GenerationControlsProps> = ({
     return (
         <div className="flex flex-col space-y-6">
              <div>
-                <h2 className="text-lg font-bold text-slate-200">Bước 3: Hoàn Thiện & Tạo Ảnh</h2>
-                <p className="text-slate-400 text-sm mt-1">
-                    {isIdPhotoTab 
-                        ? "Chọn kích thước, phông nền, trang phục và bắt đầu"
-                        : "Chọn loại ảnh, kích thước, số lượng và bắt đầu sáng tạo"
-                    }
-                </p>
+                <h2 className="text-lg font-bold text-slate-200">Bước 3: Tinh chỉnh cuối cùng</h2>
             </div>
             
             {isIdPhotoTab ? (
@@ -214,47 +208,50 @@ export const GenerationControls: React.FC<GenerationControlsProps> = ({
                 </>
             )}
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
-                    <label htmlFor="image-count" className="text-sm font-medium text-slate-300 flex-shrink-0">Số lượng:</label>
+            {/* Action Area - Sticky on Mobile */}
+            <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-emerald-500/20 p-4 z-50 sm:static sm:bg-transparent sm:border-none sm:p-0 sm:z-auto flex items-center gap-4 transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] sm:shadow-none">
+                <div className="flex-shrink-0">
                     <select
                         id="image-count"
                         value={numberOfImages}
                         onChange={(e) => onNumberOfImagesChange(Number(e.target.value))}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors cursor-pointer"
+                        className="bg-slate-800 border border-slate-700 rounded-md px-3 py-3 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors cursor-pointer text-sm font-bold"
                         disabled={isLoading}
+                        title="Số lượng ảnh"
                     >
-                        <option value={1}>1 ảnh</option>
-                        <option value={2}>2 ảnh</option>
-                        <option value={3}>3 ảnh</option>
-                        <option value={4}>4 ảnh</option>
+                        <option value={1}>1 Ảnh</option>
+                        <option value={2}>2 Ảnh</option>
+                        <option value={3}>3 Ảnh</option>
+                        <option value={4}>4 Ảnh</option>
                     </select>
                 </div>
 
-                <div className="relative group w-full sm:w-auto">
+                <div className="relative group flex-grow">
                     <button
                         onClick={onGenerate}
                         disabled={isLoading || !isReady}
                         aria-describedby={!isReady ? "generate-tooltip" : undefined}
-                        className="flex items-center justify-center space-x-3 w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-lg shadow-lg hover:shadow-glow-green disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-slate-500 disabled:shadow-none transition-all duration-300 transform hover:scale-105 disabled:scale-100"
+                        className="flex items-center justify-center space-x-3 w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-lg shadow-lg hover:shadow-glow-green disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-slate-500 disabled:shadow-none transition-all duration-300 transform hover:scale-105 disabled:scale-100 active:scale-95"
                     >
                         {isLoading ? (
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         ) : (
                             <MagicWandIcon />
                         )}
-                        <span>{isLoading ? 'Đang xử lý...' : '✨ Bắt Đầu Phép Màu!'}</span>
+                        <span className="text-base">{isLoading ? 'Đang xử lý...' : '✨ Tạo Tác Phẩm Ngay'}</span>
                     </button>
-                     {/* The Tooltip */}
+                    
+                     {/* The Tooltip - Positioned ABOVE the button */}
                     {!isReady && disabledTooltip && (
                         <div 
                             id="generate-tooltip"
                             role="tooltip"
-                            className="absolute bottom-full mb-2 w-max max-w-xs px-3 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none left-1/2 -translate-x-1/2 z-10"
+                            className="absolute bottom-full mb-3 w-max max-w-[250px] sm:max-w-xs px-4 py-2 text-sm font-medium text-white bg-slate-800 border border-red-500/50 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none left-1/2 -translate-x-1/2 z-50 text-center"
                         >
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 border-b border-r border-red-500/50 rotate-45"></div>
                             {disabledTooltip}
                         </div>
                     )}
