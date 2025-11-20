@@ -131,45 +131,164 @@ const REGULAR_STYLES: Style[] = [
 const baseCompositePrompt = "Với tư cách là một chuyên gia Photoshop và nghệ sĩ kỹ thuật số, hãy tạo một bức ảnh ghép 4K siêu thực, liền mạch. **Nhiệm vụ**: Đặt người trong ảnh gốc vào bối cảnh của **{item}**. **Yêu cầu kỹ thuật**: Ánh sáng, bóng đổ, nhiệt độ màu và kết cấu trên người của chủ thể phải khớp một cách hoàn hảo với môi trường xung quanh để tạo ra một kết quả chân thực, đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn và chính xác tất cả các đặc điểm khuôn mặt độc đáo của chủ thể. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
 const CELEBRITY_PROMPT_TEMPLATE = "Với tư cách là một chuyên gia Photoshop và đạo diễn hình ảnh, hãy tạo một bức ảnh 4K siêu thực, liền mạch. **Nhiệm vụ**: Tạo một bức ảnh trong đó người từ ảnh gốc đang đứng cạnh và chụp ảnh chung với **{item}**. Hãy tưởng tượng đây là một khoảnh khắc được bắt gặp tự nhiên, ví dụ như tại một sự kiện, buổi ra mắt phim, hoặc một cuộc gặp gỡ tình cờ. **Yêu cầu kỹ thuật**: 1. **Chủ thể**: Phải có hai người trong ảnh: người từ ảnh gốc và **{item}**. 2. **Tương tác**: Hai người nên có tương tác tự nhiên, như thể họ đang thực sự ở cùng nhau. 3. **Bối cảnh & Ánh sáng**: Bối cảnh, ánh sáng, bóng đổ, và tông màu phải đồng nhất và nhất quán cho cả hai người, tạo ra một kết quả chân thực và đáng tin. **Yêu cầu cốt lõi**: Giữ nguyên vẹn 100% các đặc điểm khuôn mặt độc đáo của người trong ảnh gốc. TRÁNH tuyệt đối cảm giác 'cắt dán' hoặc không tự nhiên.";
 
-const CELEBRITY_SUGGESTIONS: string[] = [
-    // Vietnamese
-    'Sơn Tùng M-TP', 'Trấn Thành', 'Mỹ Tâm', 'Hồ Ngọc Hà', 'Noo Phước Thịnh',
-    // International
-    'Keanu Reeves', 'Taylor Swift', 'BLACKPINK', 'BTS', 'Iron Man',
+// --- CELEBRITY STYLES (Thủ công, hình ảnh riêng biệt) ---
+const CELEBRITY_STYLES: Style[] = [
+    {
+        id: 'celeb_sontung',
+        name: 'Sơn Tùng M-TP',
+        thumbnail: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=500&q=80', // Male singer on stage
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'ca sĩ Sơn Tùng M-TP phong cách hiện đại, sân khấu sôi động')
+    },
+    {
+        id: 'celeb_taylor',
+        name: 'Taylor Swift',
+        thumbnail: 'https://images.unsplash.com/photo-1516280440614-6697288d5d38?auto=format&fit=crop&w=500&q=80', // Female singer with mic
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'Taylor Swift trong tour diễn The Eras Tour')
+    },
+    {
+        id: 'celeb_blackpink',
+        name: 'BLACKPINK',
+        thumbnail: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=500&q=80', // Event/Stage
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'nhóm nhạc BLACKPINK tại một sự kiện thời trang cao cấp')
+    },
+    {
+        id: 'celeb_tranthanh',
+        name: 'Trấn Thành',
+        thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80', // Man in suit/MC vibe
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'MC Trấn Thành trong bộ vest lịch lãm tại trường quay')
+    },
+    {
+        id: 'celeb_ironman',
+        name: 'Iron Man',
+        thumbnail: 'https://images.unsplash.com/photo-1623934199716-dc28818a6ec7?auto=format&fit=crop&w=500&q=80', // Robot/Tech
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'Iron Man trong bộ giáp công nghệ cao MK85')
+    },
+    {
+        id: 'celeb_bts',
+        name: 'BTS',
+        thumbnail: 'https://images.unsplash.com/photo-1529359744902-86b2ab9edaea?auto=format&fit=crop&w=500&q=80', // Group/Kpop vibe
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'nhóm nhạc BTS trong một buổi chụp hình tạp chí')
+    },
+    {
+        id: 'celeb_mytam',
+        name: 'Mỹ Tâm',
+        thumbnail: 'https://images.unsplash.com/photo-1520809283606-d43226b98f51?auto=format&fit=crop&w=500&q=80', // Elegant singer
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'ca sĩ Mỹ Tâm với phong cách thanh lịch, thân thiện')
+    },
+     {
+        id: 'celeb_keanu',
+        name: 'Keanu Reeves',
+        thumbnail: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=500&q=80', // Moody portrait
+        category: 'celebrity',
+        prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', 'tài tử Keanu Reeves với phong cách phong trần, đời thường')
+    },
 ];
 
-const TRAVEL_SUGGESTIONS: string[] = [
-    'Vịnh Hạ Long', 'Phố cổ Hội An', 'Ruộng bậc thang Sapa', 'Cầu Vàng, Đà Nẵng', 
-    'Tháp Eiffel, Paris', 'Tokyo, Nhật Bản', 'Đảo Santorini, Hy Lạp', 'New York, Mỹ'
+// --- TRAVEL STYLES (Thủ công, hình ảnh địa danh) ---
+const TRAVEL_STYLES: Style[] = [
+    {
+        id: 'travel_halong',
+        name: 'Vịnh Hạ Long',
+        thumbnail: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'du thuyền sang trọng giữa Vịnh Hạ Long với núi đá vôi hùng vĩ')
+    },
+    {
+        id: 'travel_hoian',
+        name: 'Phố cổ Hội An',
+        thumbnail: 'https://images.unsplash.com/photo-1557750255-c76072a7bb56?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'Phố cổ Hội An lung linh ánh đèn lồng về đêm')
+    },
+    {
+        id: 'travel_paris',
+        name: 'Tháp Eiffel, Paris',
+        thumbnail: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce7859?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'công viên Champ de Mars với tháp Eiffel lãng mạn phía sau')
+    },
+    {
+        id: 'travel_tokyo',
+        name: 'Tokyo, Nhật Bản',
+        thumbnail: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'ngã tư Shibuya sầm uất ở Tokyo với ánh đèn neon rực rỡ')
+    },
+    {
+        id: 'travel_santorini',
+        name: 'Đảo Santorini',
+        thumbnail: 'https://images.unsplash.com/photo-1613395877344-13d4c79e4284?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'những ngôi nhà trắng mái xanh đặc trưng bên bờ biển Santorini, Hy Lạp')
+    },
+    {
+        id: 'travel_nyc',
+        name: 'New York, Mỹ',
+        thumbnail: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'Quảng trường Thời đại (Times Square) sôi động ở New York')
+    },
+    {
+        id: 'travel_cauvang',
+        name: 'Cầu Vàng, Đà Nẵng',
+        thumbnail: 'https://images.unsplash.com/photo-1569604466690-2d889273b9b4?auto=format&fit=crop&w=500&q=80', // Generic bridge/mountain vibe as placeholder if exact image unavailable
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'Cầu Vàng (Cầu bàn tay) nổi tiếng trên đỉnh Bà Nà Hills trong sương mờ')
+    },
+    {
+        id: 'travel_sapa',
+        name: 'Ruộng bậc thang Sapa',
+        thumbnail: 'https://images.unsplash.com/photo-1565354785692-888d431db0eb?auto=format&fit=crop&w=500&q=80',
+        category: 'travel',
+        prompt: baseCompositePrompt.replace('{item}', 'những thửa ruộng bậc thang chín vàng óng ả tại Sapa, Việt Nam')
+    },
 ];
 
-const PANORAMA_SUGGESTIONS: string[] = [
-    'Bãi biển nhiệt đới', 'Dãy núi tuyết', 'Rừng rậm Amazon', 'Thành phố Cyberpunk', 'Dải ngân hà'
+// --- PANORAMA STYLES (Thủ công, hình ảnh bối cảnh) ---
+const PANORAMA_STYLES: Style[] = [
+    {
+        id: 'pano_galaxy',
+        name: 'Dải Ngân Hà',
+        thumbnail: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=500&q=80',
+        category: 'panorama',
+        prompt: baseCompositePrompt.replace('{item}', 'không gian vũ trụ bao la với Dải Ngân Hà rực rỡ sao trời')
+    },
+    {
+        id: 'pano_cybercity',
+        name: 'Thành phố Tương lai',
+        thumbnail: 'https://images.unsplash.com/photo-1515630278258-407f66498911?auto=format&fit=crop&w=500&q=80',
+        category: 'panorama',
+        prompt: baseCompositePrompt.replace('{item}', 'một thành phố Cyberpunk tương lai với các tòa nhà chọc trời và xe bay')
+    },
+    {
+        id: 'pano_beach',
+        name: 'Bãi biển Nhiệt đới',
+        thumbnail: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80',
+        category: 'panorama',
+        prompt: baseCompositePrompt.replace('{item}', 'một bãi biển nhiệt đới hoang sơ với cát trắng, dừa xanh và biển ngọc bích')
+    },
+    {
+        id: 'pano_snow',
+        name: 'Dãy núi Tuyết',
+        thumbnail: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=500&q=80',
+        category: 'panorama',
+        prompt: baseCompositePrompt.replace('{item}', 'đỉnh núi tuyết vĩnh cửu hùng vĩ dưới bầu trời xanh thẳm')
+    },
+    {
+        id: 'pano_jungle',
+        name: 'Rừng rậm Amazon',
+        thumbnail: 'https://images.unsplash.com/photo-1448375240586-dfd8f3793300?auto=format&fit=crop&w=500&q=80',
+        category: 'panorama',
+        prompt: baseCompositePrompt.replace('{item}', 'trái tim của rừng rậm Amazon xanh thẳm với cây cối rậm rạp và ánh nắng xuyên qua tán lá')
+    },
 ];
-
-const CELEBRITY_STYLES: Style[] = CELEBRITY_SUGGESTIONS.map(name => ({
-    id: `celebrity-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-    name: name,
-    thumbnail: `https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?auto=format&fit=crop&w=500&q=80`, // Generic Red Carpet
-    category: 'celebrity',
-    prompt: CELEBRITY_PROMPT_TEMPLATE.replace('{item}', name)
-}));
-
-const TRAVEL_STYLES: Style[] = TRAVEL_SUGGESTIONS.map(name => ({
-    id: `travel-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-    name: name,
-    thumbnail: `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=500&q=80`, // Generic Travel
-    category: 'travel',
-    prompt: baseCompositePrompt.replace('{item}', `một bức ảnh chụp tại ${name}`)
-}));
-
-const PANORAMA_STYLES: Style[] = PANORAMA_SUGGESTIONS.map(name => ({
-    id: `panorama-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-    name: name,
-    thumbnail: `https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=500&q=80`, // Generic Landscape
-    category: 'panorama',
-    prompt: baseCompositePrompt.replace('{item}', `một bối cảnh toàn cảnh của ${name}`)
-}));
 
 const TRENDING_STYLES: Style[] = [
      {
