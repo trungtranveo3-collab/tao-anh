@@ -7,7 +7,7 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
 import { Panel } from './Panel';
@@ -19,6 +19,28 @@ const UploadIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' })
     </svg>
 );
 
+// Component hiển thị thanh thời gian tự động tắt
+const ProgressBar: React.FC<{ duration: number }> = ({ duration }) => {
+    return (
+        <div className="w-full bg-slate-700 h-1 mt-4 rounded-full overflow-hidden">
+            <div 
+                className="bg-emerald-500 h-full animate-progress origin-left"
+                style={{ animationDuration: `${duration}ms` }}
+            />
+            <style>{`
+                @keyframes progress {
+                    from { width: 100%; }
+                    to { width: 0%; }
+                }
+                .animate-progress {
+                    animation-name: progress;
+                    animation-timing-function: linear;
+                    animation-fill-mode: forwards;
+                }
+            `}</style>
+        </div>
+    );
+};
 
 export const AuthManager: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -35,30 +57,40 @@ export const AuthManager: React.FC = () => {
     const [showPendingInfo, setShowPendingInfo] = useState(false);
     const [pendingInfoMessage, setPendingInfoMessage] = useState('');
     
-    // Removed isEmailInUse state as we handle it directly in catch block now
-
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
-    // This effect handles the user returning from email verification.
+    // Effect xử lý khi người dùng quay lại từ email xác thực
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('fromVerification') === 'true') {
             const userEmail = urlParams.get('email');
-            setIsLogin(true); // Switch to login tab
+            setIsLogin(true); // Chuyển sang tab đăng nhập
             if (userEmail) {
                 setEmail(userEmail);
             }
-            // Show the pending approval message
-            setPendingInfoMessage("Email của bạn đã được xác thực thành công! Tài khoản của bạn hiện đang chờ quản trị viên phê duyệt.");
+            setPendingInfoMessage("Email của bạn đã được xác thực thành công! Vui lòng đăng nhập để tiếp tục.");
             setShowPendingInfo(true);
 
-            // Clean up URL to prevent the modal from showing up on refresh
+            // Xóa params trên URL để tránh hiện lại modal khi refresh
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
         }
     }, []);
 
-    // Clean up the object URL to prevent memory leaks
+    // Effect tự động tắt popup sau 30 giây
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (showPendingInfo) {
+            timer = setTimeout(() => {
+                handleClosePendingInfo();
+            }, 30000); // 30 giây
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [showPendingInfo]);
+
+    // Cleanup object URL avatar
     useEffect(() => {
         return () => {
             if (avatarPreview) {
@@ -70,7 +102,6 @@ export const AuthManager: React.FC = () => {
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 setError("Kích thước ảnh quá lớn (Max 5MB).");
                 return;
@@ -94,12 +125,10 @@ export const AuthManager: React.FC = () => {
         }
     };
 
-
     const handleTabChange = (loginState: boolean) => {
         setIsLogin(loginState);
         setError(null);
         setMessage(null);
-        // Clear registration-specific fields when switching tabs
         setDisplayName('');
         setAvatarFile(null);
         setAvatarPreview(null);
@@ -108,10 +137,9 @@ export const AuthManager: React.FC = () => {
     const handleClosePendingInfo = () => {
         setShowPendingInfo(false);
         setPendingInfoMessage('');
-        // Reset form and switch to login
         setIsLogin(true); 
-        // Keep email for convenience, clear password
         setPassword('');
+        // Giữ lại email để người dùng tiện đăng nhập
         setDisplayName('');
         setAvatarFile(null);
         setAvatarPreview(null);
@@ -123,7 +151,7 @@ export const AuthManager: React.FC = () => {
     const handleResendFromRegister = async () => {
         if (!password) {
             setShowPendingInfo(false);
-            setError("Vui lòng nhập mật khẩu của bạn trên form đăng ký để thử lại.");
+            setError("Vui lòng nhập mật khẩu của bạn trên form để thử lại.");
             return;
         }
     
@@ -136,7 +164,10 @@ export const AuthManager: React.FC = () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             if (!userCredential.user.emailVerified) {
                 const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
-                await sendEmailVerification(userCredential.user, { url: continueUrl });
+                await sendEmailVerification(userCredential.user, { 
+                    url: continueUrl,
+                    handleCodeInApp: true
+                });
                 setMessage("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư đến (và cả mục spam) rồi đăng nhập.");
             } else {
                 setMessage("Tài khoản của bạn đã được xác thực. Vui lòng đăng nhập.");
@@ -145,9 +176,11 @@ export const AuthManager: React.FC = () => {
         } catch (err: any) {
             console.error("Resend from register error:", err);
             if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                 setError("Mật khẩu bạn đã nhập không khớp với tài khoản đã đăng ký. Vui lòng thử đăng nhập hoặc sử dụng chức năng 'Quên mật khẩu'.");
+                 setError("Mật khẩu không khớp. Vui lòng thử đăng nhập lại.");
+            } else if (err.code === 'auth/too-many-requests') {
+                 setError("Bạn đã gửi yêu cầu quá nhiều lần. Vui lòng thử lại sau.");
             } else {
-                 setError("Đã xảy ra lỗi khi cố gắng gửi lại email. Vui lòng thử lại sau.");
+                 setError("Lỗi khi gửi lại email. Vui lòng thử lại sau.");
             }
             setIsLogin(true);
         } finally {
@@ -162,21 +195,28 @@ export const AuthManager: React.FC = () => {
         setMessage(null);
 
         if (isLogin) {
-            // === LOGIN LOGIC ===
+            // === LOGIC ĐĂNG NHẬP ===
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 if (!userCredential.user.emailVerified) {
-                    // Nếu chưa xác thực, hiển thị thông báo và option gửi lại
+                    // Logic gửi lại email khi đăng nhập nhưng chưa xác thực
                     const resendVerification = async () => {
                         setIsLoading(true);
                         setMessage(null);
                         setError(null);
                         try {
                             const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
-                            await sendEmailVerification(userCredential.user, { url: continueUrl });
-                            setMessage("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư đến và cả mục spam.");
-                        } catch (e) {
-                            setError(<><strong>Gửi lại thất bại.</strong><p className="mt-1">Vui lòng chờ một lát trước khi thử lại.</p></>);
+                            await sendEmailVerification(userCredential.user, { 
+                                url: continueUrl,
+                                handleCodeInApp: true
+                            });
+                            setMessage("✅ Đã gửi lại email. Vui lòng kiểm tra hộp thư.");
+                        } catch (e: any) {
+                            if (e.code === 'auth/too-many-requests') {
+                                setError("Vui lòng đợi một lát trước khi gửi lại.");
+                            } else {
+                                setError(<><strong>Gửi lại thất bại.</strong><p className="mt-1">Vui lòng thử lại sau.</p></>);
+                            }
                         } finally {
                             setIsLoading(false);
                         }
@@ -184,26 +224,25 @@ export const AuthManager: React.FC = () => {
 
                     setError(
                         <>
-                            <p className="font-bold">Cần xác thực Email</p>
-                            <p className="mt-1">Tài khoản của bạn chưa được xác thực. Vui lòng kiểm tra email chúng tôi đã gửi để tiếp tục.</p>
-                            <p className="mt-2">
-                                Không tìm thấy email?{' '}
+                            <p className="font-bold text-yellow-400">⚠️ Tài khoản chưa xác thực</p>
+                            <p className="mt-1">Vui lòng kiểm tra email (cả mục Spam) để kích hoạt tài khoản.</p>
+                            <div className="mt-3 pt-3 border-t border-red-800/50">
                                 <button
                                     type="button"
-                                    className="font-semibold underline hover:text-white transition-colors disabled:text-slate-400 disabled:no-underline"
+                                    className="text-sm font-bold bg-red-800/50 hover:bg-red-700 py-1 px-3 rounded transition-colors w-full"
                                     onClick={resendVerification}
                                     disabled={isLoading}
                                 >
-                                    Gửi lại email xác thực
+                                    {isLoading ? 'Đang gửi...' : 'Gửi lại Email xác thực'}
                                 </button>
-                            </p>
+                            </div>
                         </>
                     );
                     setIsLoading(false);
-                    // Sign out immediately to prevent access
+                    // Đăng xuất ngay để ngăn truy cập
                     auth.signOut(); 
                 }
-                // If verified, App.tsx listener will handle the rest
+                // Nếu đã xác thực, App.tsx sẽ tự động xử lý
             } catch (err: any) {
                 console.error("Login error:", err);
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -211,21 +250,18 @@ export const AuthManager: React.FC = () => {
                 } else if (err.code === 'auth/too-many-requests') {
                     setError("Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.");
                 } else {
-                    setError("Đăng nhập thất bại. Vui lòng thử lại.");
+                    setError("Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng.");
                 }
                 setIsLoading(false);
             }
         } else {
-            // === REGISTER LOGIC ===
-            // FIX: Removed fetchSignInMethodsForEmail as it causes issues on custom domains/production
-            // due to Google's email enumeration protection.
-            
+            // === LOGIC ĐĂNG KÝ ===
             try {
-                // 1. Create Authentication User first
+                // 1. Tạo User Auth
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // 2. Upload Avatar (Fail-safe: If upload fails, we still proceed)
+                // 2. Upload Avatar (Fail-safe)
                 let photoURL = null;
                 if (avatarFile) {
                     try {
@@ -233,36 +269,37 @@ export const AuthManager: React.FC = () => {
                         await uploadBytes(storageRef, avatarFile);
                         photoURL = await getDownloadURL(storageRef);
                     } catch (uploadErr) {
-                        console.error("Avatar upload failed but continuing registration:", uploadErr);
-                        // We silently fail the avatar upload to ensure the user account is still created.
-                        // This fixes the issue where network errors during upload leave the user in a broken state.
+                        console.warn("Avatar upload failed, continuing registration...", uploadErr);
                     }
                 }
 
-                // 3. Update Auth Profile
+                // 3. Cập nhật Profile Auth
                 await updateProfile(user, {
                     displayName: displayName,
                     photoURL: photoURL
                 });
 
-                // 4. Create User Document in Firestore (Crucial step)
+                // 4. Tạo User trong Firestore
                 const userDocRef = doc(db, 'users', user.uid);
                 await setDoc(userDocRef, {
                     uid: user.uid,
                     email: email,
                     displayName: displayName,
                     photoURL: photoURL,
-                    role: 'user', // Default role
-                    status: 'pending', // Default status
+                    role: 'user',
+                    status: 'pending',
                     createdAt: serverTimestamp(),
                 });
 
-                // 5. Send Verification Email
+                // 5. Gửi Email xác thực (Tối ưu hóa)
                 const continueUrl = `${window.location.origin}${window.location.pathname}?fromVerification=true&email=${encodeURIComponent(email)}`;
-                await sendEmailVerification(user, { url: continueUrl });
+                await sendEmailVerification(user, { 
+                    url: continueUrl,
+                    handleCodeInApp: true 
+                });
 
-                // 6. Show success message
-                setPendingInfoMessage(`Đăng ký thành công! Chúng tôi đã gửi email xác thực tới ${email}. Vui lòng kiểm tra hộp thư.`);
+                // 6. Hiển thị popup thành công
+                setPendingInfoMessage(`Đăng ký thành công! Email xác thực đã được gửi tới ${email}.`);
                 setShowPendingInfo(true);
                 
                 // Clear form
@@ -272,10 +309,8 @@ export const AuthManager: React.FC = () => {
             } catch (err: any) {
                 console.error("Registration error:", err);
                 if (err.code === 'auth/email-already-in-use') {
-                    // This error is now caught here directly instead of using fetchSignInMethodsForEmail
-                    setPendingInfoMessage("Email này đã được đăng ký.");
+                    setPendingInfoMessage("Email này đã được đăng ký trước đó.");
                     setShowPendingInfo(true);
-                    // Note: We handle the logic to "resend email" inside the PendingInfo modal via handleResendFromRegister
                 } else if (err.code === 'auth/weak-password') {
                     setError("Mật khẩu quá yếu. Vui lòng sử dụng ít nhất 6 ký tự.");
                 } else if (err.code === 'auth/invalid-email') {
@@ -291,14 +326,13 @@ export const AuthManager: React.FC = () => {
 
     const handleResetPassword = async () => {
         if (!email) {
-            setError("Vui lòng nhập email để đặt lại mật khẩu.");
+            setError("Vui lòng nhập email ở trên để đặt lại mật khẩu.");
             return;
         }
         setIsLoading(true);
         setError(null);
         setMessage(null);
         try {
-             // Config URL to redirect back to app after password reset
              const actionCodeSettings = {
                 url: `${window.location.origin}${window.location.pathname}`,
                 handleCodeInApp: true,
@@ -306,11 +340,10 @@ export const AuthManager: React.FC = () => {
             await sendPasswordResetEmail(auth, email, actionCodeSettings);
             setMessage("Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.");
         } catch (err: any) {
-            console.error("Reset password error:", err);
             if (err.code === 'auth/user-not-found') {
                  setError("Không tìm thấy tài khoản với email này.");
             } else {
-                 setError("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.");
+                 setError("Không thể gửi email. Vui lòng thử lại sau.");
             }
         } finally {
             setIsLoading(false);
@@ -323,7 +356,7 @@ export const AuthManager: React.FC = () => {
                 <style>
                     {`@keyframes fade-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } } .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }`}
                 </style>
-                <Panel className="animate-fade-in">
+                <Panel className="animate-fade-in relative">
                     <div className="text-center mb-8">
                         <h1 className="led-text-effect text-4xl font-black tracking-wider uppercase mb-2" style={{ textShadow: '0 0 15px rgba(52, 211, 153, 0.5)' }}>
                             AI Photoshoot
@@ -331,15 +364,15 @@ export const AuthManager: React.FC = () => {
                         <p className="text-slate-400 text-sm">Sáng tạo hình ảnh chuyên nghiệp với sức mạnh AI</p>
                     </div>
 
-                    {/* Pending Info Modal / Overlay */}
+                    {/* POPUP THÔNG BÁO (MODAL) */}
                     {showPendingInfo && (
-                         <div className="absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-                            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 text-emerald-400">
+                         <div className="absolute inset-0 z-30 bg-slate-900/95 backdrop-blur-md rounded-lg flex flex-col items-center justify-center p-6 text-center animate-fade-in border border-emerald-500/30 shadow-2xl">
+                            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 text-emerald-400 shadow-glow-green">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Thông báo</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Kiểm tra Email của bạn</h3>
                             <p className="text-slate-300 mb-6">{pendingInfoMessage}</p>
                             
                             <div className="flex flex-col w-full space-y-3">
@@ -347,31 +380,40 @@ export const AuthManager: React.FC = () => {
                                      <button 
                                         onClick={handleResendFromRegister}
                                         disabled={isLoading}
-                                        className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                                        className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-all shadow-lg hover:shadow-emerald-500/30"
                                     >
-                                        {isLoading ? 'Đang xử lý...' : 'Gửi lại Email Xác thực & Đăng nhập'}
+                                        {isLoading ? 'Đang xử lý...' : 'Gửi lại Email & Đăng nhập'}
                                     </button>
                                 ) : (
                                     <button 
                                         onClick={handleClosePendingInfo}
-                                        className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                                        className="w-full px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold transition-colors border border-slate-500"
                                     >
-                                        Đã hiểu, quay lại Đăng nhập
+                                        Đã hiểu, đóng thông báo
                                     </button>
                                 )}
-                                
-                                {pendingInfoMessage.includes("Email này đã được đăng ký") && (
-                                    <button 
-                                        onClick={handleClosePendingInfo}
-                                        className="text-sm text-slate-400 hover:text-white"
-                                    >
-                                        Hủy bỏ
-                                    </button>
-                                )}
+                            </div>
+
+                            {/* Nút tắt (X) ở góc */}
+                            <button 
+                                onClick={handleClosePendingInfo}
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
+                                aria-label="Tắt thông báo"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Thanh tiến trình 30s */}
+                            <div className="absolute bottom-0 left-0 w-full">
+                                <ProgressBar duration={30000} />
+                                <p className="text-xs text-slate-500 mt-1 pb-2">Tự động đóng sau 30 giây</p>
                             </div>
                         </div>
                     )}
 
+                    {/* NÚT CHUYỂN TAB */}
                     <div className="flex mb-6 bg-slate-900/50 p-1 rounded-lg">
                         <button
                             className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${isLogin ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
@@ -387,13 +429,14 @@ export const AuthManager: React.FC = () => {
                         </button>
                     </div>
 
+                    {/* THÔNG BÁO LỖI / THÀNH CÔNG */}
                     {error && (
-                        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm mb-4 break-words" role="alert">
+                        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm mb-4 break-words shadow-inner" role="alert">
                             {error}
                         </div>
                     )}
                     {message && (
-                        <div className="bg-green-900/50 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-sm mb-4 break-words" role="alert">
+                        <div className="bg-green-900/50 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-sm mb-4 break-words shadow-inner" role="alert">
                             {message}
                         </div>
                     )}
@@ -407,7 +450,7 @@ export const AuthManager: React.FC = () => {
                                         type="text"
                                         value={displayName}
                                         onChange={(e) => setDisplayName(e.target.value)}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none"
                                         placeholder="VD: Minh Tuấn"
                                         required={!isLogin}
                                     />
@@ -416,7 +459,7 @@ export const AuthManager: React.FC = () => {
                                      <label className="text-sm font-medium text-slate-300">Ảnh đại diện (Tùy chọn)</label>
                                      <div className="flex items-center space-x-4">
                                         <div 
-                                            className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
+                                            className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors shrink-0"
                                             onClick={() => avatarInputRef.current?.click()}
                                         >
                                             {avatarPreview ? (
@@ -462,7 +505,7 @@ export const AuthManager: React.FC = () => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none"
                                 placeholder="example@email.com"
                                 required
                             />
@@ -485,7 +528,7 @@ export const AuthManager: React.FC = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none"
                                 placeholder="••••••••"
                                 required
                             />
